@@ -61,15 +61,20 @@ PTM.FlankingRegion4PTMSEAanalysis = gsub("_p", "", rownames(PTMSEA_rslt))
 PTMSEA_FILE_PATH = paste0(PTMSEA_OUTDIR,"/PTMSEA_OUTPUT-combined.gct")
 significance_cutoff = 0.01
 ptmsea_rslt_all = processPTMSEAresult(PTMSEA_FILE_PATH, output.score.type = "NES", 
-    sig.thresh=significance_cutoff)
+    sig.thresh=significance_cutoff, PTMSEA_OUTDIR = PTMSEA_OUTDIR)
 ptmsea_rslt = ptmsea_rslt_all$ptmsea_rslt
 ```
 
-#### Check the dotplots for the significant kinases
+Check the dotplots for the significant kinases
 ```
 SignificantKinaseDotplots = ptmsea_rslt_all$plot
 ```
 ![Example dotplot](https://github.com/Maj18/KinaseDownstream/blob/main/man/figures/KinaseDotplot_example.png)
+
+One can also map the significant kinases to manning kinase tree at http://kinhub.org/kinmap/index.html
+The the significant kinases can be found in the SigKinaseList_*.txt within PTMSEA_OUTDIR.
+
+![Example manning kinase tree mapping](https://github.com/Maj18/KinaseDownstream/blob/main/man/figures/ExampleManningKinaseTreeMapping.png)
 
 #### Process the limma output to build maps among FlankingRegions, uniprot IDs and Phosphosites, for the kinase-substrate network analysis
 ```
