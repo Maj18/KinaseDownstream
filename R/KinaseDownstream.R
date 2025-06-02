@@ -110,7 +110,7 @@ processPTMSEAresult = function(PTMSEA_FILE_PATH, output.score.type = "NES", sig.
     # scale_fill_manual(values=c("purple","orange","grey")) +
     ggplot2::theme_bw(base_size = 15) + 
     ggplot2::scale_size(trans="reverse") +
-    ggplot2::guides(alpha="none", size=ggplot2::guide_legend(override.aes=list(shape=21))) +
+    ggplot2::guides(scales::alpha="none", size=ggplot2::guide_legend(override.aes=list(shape=21))) +
     ggplot2::theme(strip.text.x = ggplot2::element_text(size = 14)) +
     ggplot2::labs(caption=paste0("fdr.pvalueCutoff = ", sig.thresh, ", pAdjustMethod = fdr"))
 
@@ -205,10 +205,10 @@ KinaseNetwork4substrates = function(pair, PTM.FlankingRegion4PTMSEAanalysis, lim
     igraph::V(g)$label = c(igraph::V(g)[[1]]$name,   #sub(".*_", "", V(g)[[1]]$name), 
                    mapping_ID[igraph::V(g)[2:length(igraph::V(g))]$name] %>% as.character())   
     mapping_regulation = mapping_regulation[shared] 
-    igraph::E(g)$color = ifelse(regulation=="u", alpha("orange",0.25), alpha("darkturquoise",0.25))
-    igraph::V(g)$color = c(alpha("black", 0.25), ifelse(mapping_regulation<0, 
-                                                alpha("darkturquoise",0.5), alpha("orange",0.5)))
-    layout = layout_with_fr(g)
+    igraph::E(g)$color = ifelse(regulation=="u", scales::alpha("orange",0.25), scales::alpha("darkturquoise",0.25))
+    igraph::V(g)$color = c(scales::alpha("black", 0.25), ifelse(mapping_regulation<0, 
+                                                scales::alpha("darkturquoise",0.5), scales::alpha("orange",0.5)))
+    layout = igraph::layout_with_fr(g)
     # layout = layout_in_circle(g)
     dir.create(paste0(PTMSEA_OUTDIR, "/Network/kinase_substrates/", pair,"/"), 
                showWarnings = FALSE, recursive = TRUE)
@@ -434,7 +434,7 @@ ppiNetwork4substrates = function(limma_output, PTMSEA_output, significance_cutof
     # Set the colors for the edges that connect the kinase substrates to their proteomics immediate neighbors to orange.
     edge.colors[interactions$from%in%as.character(mapping_back_all_proteins[names(mapped_interest)])|
                   interactions$to%in%as.character(mapping_back_all_proteins[names(mapped_interest)])] = 
-                  alpha("orange", 0.5)    
+                  scales::alpha("orange", 0.5)    
     # Add in the regulation (up or down) of the kinase-substrate interactions from PTMsigDB
     # Subset the PTMsigDB to only keep those that match the ID
     t1 = ptmsigdb3 %>% filter(Term==ID)
@@ -455,7 +455,7 @@ ppiNetwork4substrates = function(limma_output, PTMSEA_output, significance_cutof
     regulations_ID = mapping_TO_regualtion[filter(interactions,from%in%ID) %>% pull(to)]    
     # Set the edge colors for the edges that connect the kinase to their substrates according their regulation (up:orange or down:turqoise) as stated in PTMsigDB
     edge.colors[interactions$from%in%ID] = 
-      ifelse(regulations_ID=="u", alpha("purple",0.5), alpha("darkturquoise",0.5))
+      ifelse(regulations_ID=="u", scales::alpha("purple",0.5), scales::alpha("darkturquoise",0.5))
 
     # Set the edge widths for the edges from or to the kinase substrates to 0.75, and all other edges to 0.1
     edge.widths=rep(0.1, nrow(interactions))
@@ -467,10 +467,10 @@ ppiNetwork4substrates = function(limma_output, PTMSEA_output, significance_cutof
     ppi_network = igraph::graph_from_data_frame(interactions[, 1:2], directed = FALSE)    
     #col_gradients = colorRampPalette(c("orange", "purple"))(length(mapped_interest$STRING_id))
     # Set label color of the kinase to black, set the label colors of kinase substrate to dark grey, and set the rest as grey:
-    vertex.label.colors = rep(alpha("black", 0.5), length(igraph::V(ppi_network)$name))
-    vertex.label.colors[igraph::V(ppi_network)$name %in%ID] = alpha("black", 1)
+    vertex.label.colors = rep(scales::alpha("black", 0.5), length(igraph::V(ppi_network)$name))
+    vertex.label.colors[igraph::V(ppi_network)$name %in%ID] = scales::alpha("black", 1)
     vertex.label.colors[igraph::V(ppi_network)$name%in%network_vertexIDs_4substrates] = 
-                alpha("black", 0.8)    
+                scales::alpha("black", 0.8)    
     # Set the vertex colors of the kinase substrates based on the effect of the kinase substrates: orange: up-regulated, darkturquoise: down-regulated
     mapping_TO_effect = setNames(interactions2$effect, interactions2$to)
     # Here effect could be logFC or the t statistics from Limma analysis
@@ -478,9 +478,9 @@ ppiNetwork4substrates = function(limma_output, PTMSEA_output, significance_cutof
                                  .[.%in%network_vertexIDs_4substrates]]
 
     vertex.colors = rep("snow3", length(igraph::V(ppi_network)$name))
-    vertex.colors[igraph::V(ppi_network)$name %in%ID] = alpha("purple", 0.5)
+    vertex.colors[igraph::V(ppi_network)$name %in%ID] = scales::alpha("purple", 0.5)
     vertex.colors[igraph::V(ppi_network)$name%in%network_vertexIDs_4substrates] =
-        ifelse(effect<0, alpha("darkturquoise",0.5), alpha("orange",0.5))    
+        ifelse(effect<0, scales::alpha("darkturquoise",0.5), scales::alpha("orange",0.5))    
     # Set the vertex sizes of the kinase substrates based on their effect*2, set the rest to 1, and set the kinase to 6. 
     vertex.sizes = rep(1, length(igraph::V(ppi_network)$name))
     vertex.sizes[igraph::V(ppi_network)$name%in%network_vertexIDs_4substrates] =
