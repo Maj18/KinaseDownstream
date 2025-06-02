@@ -201,7 +201,7 @@ KinaseNetwork4substrates = function(pair, PTM.FlankingRegion4PTMSEAanalysis, lim
       filter(Phosphosite%in%shared) %>% pull(Regulation)
     edge = data.frame(From=rep(ID, length(shared)), To=shared)    
     # library(igraph)
-    g = graph_from_data_frame(d = edge, directed = FALSE)
+    g = igraph::graph_from_data_frame(d = edge, directed = FALSE)
     V(g)$label = c(V(g)[[1]]$name,   #sub(".*_", "", V(g)[[1]]$name), 
                    mapping_ID[V(g)[2:length(V(g))]$name] %>% as.character())   
     mapping_regulation = mapping_regulation[shared] 
