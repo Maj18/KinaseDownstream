@@ -81,8 +81,8 @@ processPTMSEAresult = function(PTMSEA_FILE_PATH, output.score.type = "NES", sig.
   colnames(gct4plot_NES) = gsub("NES_", "", colnames(gct4plot_NES))
   gct4plot_fdr.pvalue =  gct_data[, c("id", grep("fdr.pvalue.", colnames(gct_data), value=T))]
   colnames(gct4plot_fdr.pvalue) = gsub("fdr.pvalue.", "", colnames(gct4plot_fdr.pvalue))
-  gct4plot = full_join(tidyr::gather(gct4plot_NES,key="Pair",value="NES",2:4), 
-    tidyr::gather(gct4plot_fdr.pvalue,key="Pair",value="fdr.pvalue",2:4)) %>% 
+  gct4plot = full_join(tidyr::gather(gct4plot_NES,key="Pair",value="NES",2:ncol(gct4plot_NES)), 
+    tidyr::gather(gct4plot_fdr.pvalue,key="Pair",value="fdr.pvalue",2:ncol(gct4plot_fdr.pvalue))) %>% 
     filter(fdr.pvalue<sig.thresh) %>% arrange(-NES) 
   gct4plot$Regulation = ifelse(gct4plot$NES>0, "Up", "Down")
   gct4plot$Pair = factor(gct4plot$Pair)
