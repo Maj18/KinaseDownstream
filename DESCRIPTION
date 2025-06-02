@@ -1,0 +1,26 @@
+Package: KinaseDownstream
+Type: Package
+Title: Kinase downstream visualization
+Version: 1.0
+Date: 2025-06-02
+Author: Yuan Li
+Maintainer: Who to complain to <yuan.li@nbis.se>
+Description: This package provides functions to visualize the significantly enriched kinases in the phosphoproteomics data, the networks between each kinase, the downstream targets and their immediate String_db interacting neighbors that are observed from the matching proteomics data, facilitating the understanding of kinase interactions and their biological implications.
+License: GPL-3
+Imports:
+    dplyr,
+    ggplot2,
+    igraph,
+    stringr,
+    tidyr,
+    ggraph,
+    STRINGdb,
+    GSEABase,
+    tibble,
+    cmapR,
+    ssGSEA2,
+    xlsx,
+    biomaRt,
+    future,
+    future.apply,
+    BiocGenerics
