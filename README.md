@@ -27,7 +27,7 @@ library(KinaseDownstream)
 ## Example run:
 ```
 library(KinaseDownstream)
-INDIR = "./example/"
+INDIR = "./"
 limma_rslt = readRDS(paste0(INDIR, "/Limma_differentialAnalysis_result.RDS"))
 ```
 The limma input should look like this:
@@ -46,7 +46,7 @@ $HSvsPNL
 
 #### Run PTMSEA analysis
 ```
-PTMSEA_OUTDIR = "./example/"
+PTMSEA_OUTDIR = "./"
 PTMSEA_rslt = runPTMSEA(limma_rslt, PTMSEA_OUTDIR)
 # Get the flanking regions that have been used for PTMSEA analysis
 PTM.FlankingRegion4PTMSEAanalysis = gsub("_p", "", rownames(PTMSEA_rslt))
@@ -66,6 +66,7 @@ ptmsea_rslt = ptmsea_rslt_all$ptmsea_rslt
 Check the dotplots for the significant kinases
 ```
 SignificantKinaseDotplots = ptmsea_rslt_all$plot
+SignificantKinaseDotplots
 ```
 ![Example dotplot](https://github.com/Maj18/KinaseDownstream/blob/main/man/figures/KinaseDotplot_example.png)
 
@@ -115,6 +116,7 @@ invisible(capture.output(lapply(seq_along(limma_rslt), function(i) {
                            PTMsigDB_collection_file = 
                             paste0(PTMSEA_OUTDIR, "/ptm.sig.db.all.flanking.human.v2.0.0.gmt")) # This is needed when flanking regions are added to the figures, otherwise, please DO NOT set outputFileSuffix.
 })))
+
 ```
 ![Example kinase-substrate network](https://github.com/Maj18/KinaseDownstream/blob/main/man/figures/Kinase_substrates_network_example.png)
 
@@ -123,12 +125,13 @@ invisible(capture.output(lapply(seq_along(limma_rslt), function(i) {
 ##### Prepare proteomics dataset that matches the phosphoproteomics data
 ```
 # Download the psoriasis-associated proteins from the reference
-proteomics_dat = openxlsx::read.xlsx("./test/12014_2020_9293_MOESM5_ESM.xlsx", sheet = 1)
+proteomics_dat = openxlsx::read.xlsx(paste0(INDIR, "/12014_2020_9293_MOESM5_ESM.xlsx"), sheet = 1)
 # Let's get significantly upregulated proteins
 up_proteomics = proteomics_dat %>% filter(`pso/con.Ratio`>1.3) %>% pull(Protein.accession) # This is a list protein uniprot id
 # [1] "A0A075B6I9" "A0A075B6K0" "A0A075B6K4" "A0A0C4DH38" "A8K2U0"     "O00148"
 # Let's get significantly downregulated proteins
 down_proteomics = proteomics_dat %>% filter(`pso/con.Ratio`< (1/1.3)) %>% pull(Protein.accession)
+
 ```
 
 #### Run the PPI network analysis for each pair of conditions

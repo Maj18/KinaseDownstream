@@ -486,7 +486,7 @@ ppiNetwork4substrates = function(limma_output, PTM.FlankingRegion4PTMSEAanalysis
     vertex.sizes[igraph::V(ppi_network)$name%in%network_vertexIDs_4substrates] =
         abs(round(as.numeric(effect))*2)
     vertex.sizes[igraph::V(ppi_network)$name %in%ID] = 10    
-    coords = layout_in_circle(ppi_network)
+    coords = igraph::layout_in_circle(ppi_network)
 
     L = length(igraph::V(ppi_network))/60
     ID2 = sub("/", "_", ID)
