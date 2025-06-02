@@ -72,7 +72,8 @@ SignificantKinaseDotplots = ptmsea_rslt_all$plot
 ![Example dotplot](https://github.com/Maj18/KinaseDownstream/blob/main/man/figures/KinaseDotplot_example.png)
 
 One can also map the significant kinases to manning kinase tree at http://kinhub.org/kinmap/index.html
-The the significant kinases can be found in the SigKinaseList_*.txt within PTMSEA_OUTDIR.
+
+The significant kinases can be found in the SigKinaseList_*.txt within PTMSEA_OUTDIR.
 
 ![Example manning kinase tree mapping](https://github.com/Maj18/KinaseDownstream/blob/main/man/figures/ExampleManningKinaseTreeMapping.png)
 
