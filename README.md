@@ -54,7 +54,7 @@ PTMSEA_rslt = runPTMSEA(limma_rslt, PTMSEA_OUTDIR)
 PTM.FlankingRegion4PTMSEAanalysis = gsub("_p", "", rownames(PTMSEA_rslt))
 ```
 
-**Note:** For the moment, we only support the PTMSEA analysis (based on PTMsigDB2.0) with the flanking regions of the phosphosites, which are defined as 7 amino acids upstream and downstream of the phosphosite, in human. The PTMSEA analysis is performed on the phosphoproteomics data that has been processed by limma.
+**Note:** For the moment, we only support the PTMSEA analysis (based on PTMsigDB2.0) with the flanking regions of the phosphosites, which are defined as 7 amino acids upstream and downstream of the phosphosite, in human. The PTMSEA analysis is performed on the phosphoproteomics data that has been processed by limma. 
 
 #### Prepare the PTMSEA output for the kinase-substrate network analysis
 ```
@@ -118,7 +118,7 @@ invisible(capture.output(lapply(seq_along(limma_rslt), function(i) {
 ```
 ![Example kinase-substrate network](https://github.com/Maj18/KinaseDownstream/blob/main/man/figures/Kinase_substrates_network_example.png)
 
-> In the example kinase-substrate network plot above, the nodes represent the kinases (grey) and their downstream targets, while the edges represent the interactions between them. The color of the substrate nodes indicates the regulation status (upregulated: orange or downregulated: turquoise) based on the phosphoproteomics data.
+> In the example kinase-substrate network plot above, the nodes represent the kinases (grey) and their downstream targets, while the edges represent the regulation status of interactions in the PTMsigDB (upregulated: orange or downregulated: turquoise). The color of the substrate nodes indicates the regulation status (upregulated: orange or downregulated: turquoise) based on the phosphoproteomics data.
 
 ##### Prepare proteomics dataset that matches the phosphoproteomics data
 ```
@@ -163,4 +163,4 @@ invisible(capture.output(lapply(seq_along(limma_rslt), function(i) {
 
 ![Example PPI network](https://github.com/Maj18/KinaseDownstream/blob/main/man/figures/PPI_example.png)
 
-> In the example PPI network plot above, the nodes represent the kinases (purple), their downstream targets (orange or turquoise) and the immediate String_db interacting neighbors (green) of the substreates. The immediate neighbors are required to be significantly regulated in the proteomics data. The edges represent the interactions between them. The color of the nodes for the substrate and their neighbors indicates the regulation status (upregulated: orange or downregulated: turquoise) based on the phosphoproteomics data. The color of the edges of the kinase-substrate interactions indicates the regulation status of the kinase (upregulated: purple or downregulated: turquoise) based on the phosphoproteomics data, while the color of the edges of the substrate-neighbor interactions are in orange.
+> In the example PPI network plot above, the nodes represent the kinases (purple), their downstream targets (orange or turquoise) and the immediate String_db interacting neighbors (gray) of the substrates. The immediate neighbors are required to be significantly regulated in the proteomics data. The edges represent the interactions between them. The color of the nodes for the substrates indicates the regulation status (upregulated: orange or downregulated: turquoise) based on the phosphoproteomics data. The color of the edges of the kinase-substrate interactions indicates the regulation status of the kinase (upregulated: purple or downregulated: turquoise) based on the phosphoproteomics data, while the color of the edges of the substrate-neighbor interactions are in orange.
