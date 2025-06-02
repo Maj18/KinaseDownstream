@@ -464,7 +464,7 @@ ppiNetwork4substrates = function(limma_output, PTMSEA_output, significance_cutof
                   interactions$to%in%network_vertexIDs_4substrates%>%na.omit()] = 0.75    
     # Create igraph object
     # library(igraph)
-    ppi_network = graph_from_data_frame(interactions[, 1:2], directed = FALSE)    
+    ppi_network = igraph::graph_from_data_frame(interactions[, 1:2], directed = FALSE)    
     #col_gradients = colorRampPalette(c("orange", "purple"))(length(mapped_interest$STRING_id))
     # Set label color of the kinase to black, set the label colors of kinase substrate to dark grey, and set the rest as grey:
     vertex.label.colors = rep(alpha("black", 0.5), length(V(ppi_network)$name))
