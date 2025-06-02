@@ -26,25 +26,28 @@ library(KinaseDownstream)
 
 ## For an example run (in R) after having KinaseDownstream being loaded:
 
+#### Example run:
 ```
-# Example run:
 library(KinaseDownsgtream)
 INDIR = "./example/"
 limma_rslt = readRDS(paste0(INDIR, "/Limma_differentialAnalysis_result.RDS"))
-# The limma input should look like this:
 ```
+The limma input should look like this:
+
 $PNLvsPL
-   Phosphosite PTM.FlankingRegion    logFC  AveExpr         t      P.Value    adj.P.Val         B
-1  Q9GZM8_T245    GFGTSPLTPSARISA 7.939980 6.880564  5.174157 3.060240e-05 1.160624e-04  2.282851
-2 Q09666_S2397    DLDLHLKSPKAKGEV 7.768347 5.267173 13.931695 5.022985e-13 1.024772e-11 16.576525
+|   |Phosphosite  | PTM.FlankingRegion |logFC   |AveExpr    |    t    |   P.Value  |  adj.P.Val |    B    |
+|---|-------------|--------------------|--------|-----------|---------|------------|------------|---------|
+|1  |Q9GZM8_T245  |  GFGTSPLTPSARISA   |7.939980| 6.880564  | 5.174157|3.060240e-05|1.160624e-04| 2.282851|
+|2  |Q09666_S2397 |  DLDLHLKSPKAKGEV   |7.768347| 5.267173  |13.931695|5.022985e-13|1.024772e-11|16.576525|
 
 $HSvsPNL
-  Phosphosite PTM.FlankingRegion     logFC  AveExpr         t    P.Value  adj.P.Val         B
-1 Q9UPU9_S420    TPIKAYSSPSTTPEA 41.798077 4.815310 0.7234658 0.51001991 0.72947446 -4.595267
-2 Q4KMP7_S678    RAAGGAPSPPPPVRR 37.988089 2.888568 3.6986481 0.02143313 0.09818054 -4.564233
+|  |Phosphosite   |PTM.FlankingRegion |logFC    |AveExpr  |    t     |  P.Value  |  adj.P.Val |    B     |
+|--|--------------|-------------------|---------|---------|----------|-----------|------------|----------|
+|1 |Q9UPU9_S420   |TPIKAYSSPSTTPEA    |41.798077| 4.815310| 0.7234658| 0.51001991| 0.72947446 | -4.595267|
+|2 |Q4KMP7_S678   |RAAGGAPSPPPPVRR    |37.988089| 2.888568| 3.6986481| 0.02143313| 0.09818054 | -4.564233|
 
+#### Run PTMSEA analysis
 ```
-# Run PTMSEA analysis
 PTMSEA_OUTDIR = "./example/"
 PTMSEA_rslt = runPTMSEA(limma_rslt, PTMSEA_OUTDIR)
 # Get the flanking regions that have been used for PTMSEA analysis
@@ -53,21 +56,27 @@ PTM.FlankingRegion4PTMSEAanalysis = gsub("_p", "", rownames(PTMSEA_rslt))
 
 **Note:** For the moment, we only support the PTMSEA analysis with the flanking regions of the phosphosites, which are defined as 7 amino acids upstream and downstream of the phosphosite, in human. The PTMSEA analysis is performed on the phosphoproteomics data that has been processed by limma.
 
+#### Prepare the PTMSEA output for the kinase-substrate network analysis
 ```
-# Prepare the PTMSEA output for the kinase-substrate network analysis
 PTMSEA_FILE_PATH = paste0(PTMSEA_OUTDIR,"/PTMSEA_OUTPUT-combined.gct")
 significance_cutoff = 0.01
 ptmsea_rslt_all = processPTMSEAresult(PTMSEA_FILE_PATH, output.score.type = "NES", 
     sig.thresh=significance_cutoff)$ptmsea_rslt
 ptmsea_rslt = ptmsea_rslt_all$ptmsea_rslt
+```
 
-# Check the dotplots for the significant kinases
+#### Check the dotplots for the significant kinases
+```
 SignificantKinaseDotplots = ptmsea_rslt_all$plot
+```
 
-# Process the limma output to build maps among FlankingRegions, uniprot IDs and Phosphosites, for the kinase-substrate network analysis
+#### Process the limma output to build maps among FlankingRegions, uniprot IDs and Phosphosites, for the kinase-substrate network analysis
+```
 maps = processLimmaResult(limma_rslt, PTM.FlankingRegion4PTMSEAanalysis)
+```
 
-# Run the kinase-substrate network analysis for each pair of conditions
+#### Run the kinase-substrate network analysis for each pair of conditions
+```
 significance_statistic = "fdr.pvalue"
 invisible(capture.output(lapply(seq_along(limma_rslt), function(i) {
   pair = names(limma_rslt)[i]
@@ -101,8 +110,8 @@ invisible(capture.output(lapply(seq_along(limma_rslt), function(i) {
 })))
 ```
 
+##### prepare proteomics dataset that matches the phosphoproteomics data
 ```
-# prepare proteomics dataset that matches the phosphoproteomics data
 # Download the psoriasis-associated proteins from the reference
 proteomics_dat = openxlsx::read.xlsx("./test/12014_2020_9293_MOESM5_ESM.xlsx", sheet = 1)
 # Let's get significantly upregulated proteins
@@ -112,9 +121,11 @@ up_proteomics = proteomics_dat %>% filter(`pso/con.Ratio`>1.3) %>% pull(Protein.
 down_proteomics = proteomics_dat %>% filter(`pso/con.Ratio`< (1/1.3)) %>% pull(Protein.accession)
 ```
 
+#### Run the PPI network analysis for each pair of conditions
+
+The PPI network will connect each kinase to its downstream targets and their immediate String_db interacting neighbors that are observed from the matching proteomics data.
+
 ```
-# Run the PPI network analysis for each pair of conditions
-# The PPI network will connect each kinase to its downstream targets and their immediate String_db interacting neighbors that are observed from the matching proteomics data.
 significance_statistic = "fdr.pvalue"
 significance_cutoff = 0.01
 invisible(capture.output(lapply(seq_along(limma_rslt), function(i) {
