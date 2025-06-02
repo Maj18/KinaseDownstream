@@ -51,7 +51,7 @@ runPTMSEA = function(limma_rslt, PTMSEA_OUTDIR) {
 
 #' Prepare the PTM-SEA results
 #' @import tidyr
-#' @import 
+#' @import ggplot2
 #' @import dplyr
 #' @param PTMSEA_FILE_PATH the path to the PTM-SEA output file: PTMSEA_OUTPUT-combined.gct.
 #' @param output.score.type the type of score to be used in the output, default is "NES".
