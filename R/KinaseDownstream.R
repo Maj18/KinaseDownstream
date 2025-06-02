@@ -1,3 +1,165 @@
+#' Run PTM-SEA on the limma results
+#' @import dplyr
+#' 
+runPTMSEA = function(limma_rslt, PTMSEA_OUTDIR) {
+  limma_rslt_4gct = lapply(seq_along(limma_rslt), function(i){
+    rslt = limma_rslt[[i]] %>% arrange(-logFC)
+    rownames(rslt) = NULL
+    temp = rslt[, c("PTM.FlankingRegion", "logFC")]
+    colnames(temp) = c("PTM.FlankingRegion", names(limma_rslt)[i])
+    temp$PTM.FlankingRegion = paste0(temp$PTM.FlankingRegion, "_p")
+    temp
+  }) %>% Reduce(full_join, .) %>%
+    .[!duplicated(.$PTM.FlankingRegion), ] 
+  rownames(limma_rslt_4gct) = NULL
+  limma_rslt_4gct = 
+    tibble::column_to_rownames(limma_rslt_4gct, var="PTM.FlankingRegion")
+  cmapR::write_gct(as.matrix(limma_rslt_4gct)%>%cmapR::new("GCT",mat=.), 
+    paste0(PTMSEA_OUTDIR ,"/PTM-SEA"), precision=2)
+  # run PTM-SEA
+  input_gct_file = list.files(path=PTMSEA_OUTDIR, pattern = "PTM-SEA", full.names = TRUE)
+
+  # # Download gene set database 
+  download.file(url = "https://raw.githubusercontent.com/nicolerg/ssGSEA2/refs/heads/master/db/ptmsigdb/ptm.sig.db.all.flanking.human.v2.0.0.gmt",
+                destfile = paste0(PTMSEA_OUTDIR, "/ptm.sig.db.all.flanking.human.v2.0.0.gmt"))
+  set.seed(123)
+  invisible(capture.output(ssGSEA2::run_ssGSEA2(input_gct_file,
+                    output.prefix = "PTMSEA_OUTPUT",
+                    gene.set.databases = paste0(PTMSEA_OUTDIR, "/ptm.sig.db.all.flanking.human.v2.0.0.gmt"),
+                    output.directory = PTMSEA_OUTDIR,
+                    sample.norm.type = "none", #uses actual expression values
+                    weight = 1, 
+                    correl.type = "rank", #genes are weighted by actual values 
+                    statistic = "area.under.RES",
+                    spare.cores = 4,
+                    output.score.type = "NES", 
+                    nperm = 1000, 
+                    min.overlap = 5, 
+                    extended.output = TRUE, 
+                    global.fdr = FALSE,
+                    export.signat.gct = T,
+                    param.file=T,
+                    log.file = paste0(PTMSEA_OUTDIR, "/run.log")))) 
+                    
+  return(limma_rslt_4gct)
+}
+
+
+
+
+#' Prepare the PTM-SEA results
+#' @import tidyr
+#' @import ggplot2
+#' @import dplyr
+#' @param PTMSEA_FILE_PATH the path to the PTM-SEA output file: PTMSEA_OUTPUT-combined.gct.
+#' @param output.score.type the type of score to be used in the output, default is "NES".
+#' @param sig.thresh the fdr.pvalue threshold for filtering the PTMSEA results, default is 0.05.
+#' 
+processPTMSEAresult = function(PTMSEA_FILE_PATH, output.score.type = "NES", sig.thresh = 0.05, PTMSEA_OUTDIR) {
+  gct_data=read.delim(PTMSEA_FILE_PATH , skip = 2, 
+                      header = TRUE, sep = "\t", check.names = FALSE) 
+  pairs = grep("fdr.pvalue", colnames(gct_data), value=T) %>% gsub("fdr.pvalue.", "", .)
+  colnames(gct_data)[colnames(gct_data) %in% pairs] =
+    paste0(output.score.type, "_", pairs)
+  # Save PTMSEA result to an excel file
+  xlsx::write.xlsx(gct_data,
+            gsub("gct", "xlsx", PTMSEA_FILE_PATH),
+            append=F, sheetName="PTMSEAonDiff",row.names = F)
+  ptmsea_rslt = lapply(pairs, function(Pair) {
+    temp = gct_data[, c("id", "Signature.set.description", "Signature.set.size", 
+                        grep(Pair, colnames(gct_data), value=T))]
+    colnames(temp) =
+      gsub(paste0("[.]",Pair),"", colnames(temp)) %>% gsub(paste0("_",Pair),"",.)
+    temp
+  }) %>% setNames(pairs)
+
+  # Make a dot plot
+  # library(tidyr)
+  gct4plot_NES =  gct_data[, c("id", grep("NES_", colnames(gct_data), value=T))]
+  colnames(gct4plot_NES) = gsub("NES_", "", colnames(gct4plot_NES))
+  gct4plot_fdr.pvalue =  gct_data[, c("id", grep("fdr.pvalue.", colnames(gct_data), value=T))]
+  colnames(gct4plot_fdr.pvalue) = gsub("fdr.pvalue.", "", colnames(gct4plot_fdr.pvalue))
+  gct4plot = full_join(gather(gct4plot_NES,key="Pair",value="NES",2:4), 
+    gather(gct4plot_fdr.pvalue,key="Pair",value="fdr.pvalue",2:4)) %>% 
+    filter(fdr.pvalue<sig.thresh) %>% arrange(-NES) 
+  gct4plot$Regulation = ifelse(gct4plot$NES>0, "Up", "Down")
+  gct4plot$Pair = factor(gct4plot$Pair)
+  gct4plot$id = 
+    factor(gct4plot$id, levels=unique(rev(gct4plot$id)))
+  # splitted = split(gct4plot, gct4plot$Pair) %>% lapply(., function(i) {
+  #   i %>% pull(id)
+  # })
+  # shared = Reduce(intersect, splitted)
+  # shared2 = Reduce(intersect, splitted[c(1,2)])
+  # unique1 = setdiff(splitted[[1]], c(shared,shared2))
+  # unique2 = setdiff(splitted[[2]], c(shared,shared2))
+  # unique3 = setdiff(splitted[[3]], c(shared,shared2))
+  # gct4plot$id = factor(gct4plot$id, levels=unique(rev(c(shared,shared2,unique1,unique2,unique3))))
+  # gct4plot$Category = ifelse(gct4plot$id%in%shared,"Shared",
+  #                          ifelse(gct4plot$id%in%unique1,"Uniq.PNLvsPL", 
+  #                                 ifelse(gct4plot$id%in%unique2, "Uniq.HSvsPL", "Uniq.HSvsPNL")))
+  # library(ggplot2)
+  plot = ggplot(gct4plot, aes(x=NES, y=id)) +
+    geom_point(shape=21, aes(size=fdr.pvalue, fill=Pair)) +
+    facet_wrap(~Pair, ncol=3) + 
+    ggtitle("PTM-SEA_PTMsigDB2") +
+    xlab("NES") +
+    ylab("") + labs(size="fdr.pvalue") +
+    # scale_fill_manual(values=c("purple","orange","grey")) +
+    theme_bw(base_size = 15) + 
+    scale_size(trans="reverse") +
+    guides(alpha="none", size=guide_legend(override.aes=list(shape=21))) +
+    theme(strip.text.x = element_text(size = 14)) +
+    labs(caption=paste0("fdr.pvalueCutoff = ", sig.thresh, ", pAdjustMethod = fdr"))
+
+  # Prepare signficant kinase names for mapping onto the Manning kinase tree (http://kinhub.org/kinmap/index.html)
+  fdrs = grep("fdr.pvalue", colnames(gct_data), value=T)
+  for (fdr in fdrs) {
+	  N = gsub("fdr.pvalue.", "", fdr)
+	  kinaseList = gct_data %>% filter(gct_data[,fdr,drop=T]<sig.thresh) %>% pull(id) %>% 
+		  grep("KINASE", ., value=T) %>% gsub("KINASE-PSP_", "", .) %>% 
+		  gsub("KINASE-iKiP_", "", .) %>% stringr::str_split(., "/|-|[.]") %>% 
+		  unlist() %>% paste0(., collapse=",")
+    dir.create(PTMSEA_OUTDIR, showWarnings = FALSE, recursive = TRUE)
+	  writeLines(kinaseList, 
+		  paste0(PTMSEA_OUTDIR, "/SigKinaseList_", N, ".txt"))
+  }
+
+  return(list(ptmsea_rslt=ptmsea_rslt, gct4plot=gct4plot, plot=plot))
+}
+
+
+
+
+#' @import dplyr
+#' @param PTM.FlankingRegion4PTMSEAanalysis a character vector of PTM flanking regions that have been used in PTMSEA.
+#' @param limma_rslt a list of data frames containing the limma results.
+#' 
+processLimmaResult = function(limma_rslt, PTM.FlankingRegion4PTMSEAanalysis) {
+  maps = lapply(limma_rslt, function(rslt) {
+    rslt = filter(rslt, PTM.FlankingRegion%in%PTM.FlankingRegion4PTMSEAanalysis)
+    rslt$uniprotID = rslt$Phosphosite %>% sub("_.*", "", .)
+    rslt$PTM.FlankingRegion2 = paste0(rslt$PTM.FlankingRegion, "-p")
+    rslt$PhosLocation = rslt$Phosphosite %>% sub(".*_", "", .)
+    mapUniprotPhosLocation2FlankingRegion2 = 
+      setNames(paste0(rslt$uniprotID,"\n",rslt$PhosLocation), rslt$PTM.FlankingRegion2)
+    mapUniprotPhosLocationFlankingRegion2FlankingRegion2 = 
+      setNames(paste0(rslt$uniprotID,"\n",rslt$PhosLocation,
+                    "\n",rslt$PTM.FlankingRegion), rslt$PTM.FlankingRegion2)
+    mapLogFC2FlankingRegion2 = setNames(rslt$logFC, rslt$PTM.FlankingRegion2) 
+    list(mapUniprotPhosLocation2FlankingRegion2 = 
+            mapUniprotPhosLocation2FlankingRegion2,
+         mapUniprotPhosLocationFlankingRegion2FlankingRegion2 = 
+            mapUniprotPhosLocationFlankingRegion2FlankingRegion2,
+         mapLogFC2FlankingRegion2 = mapLogFC2FlankingRegion2)
+  })
+
+  return(maps) 
+}
+
+
+
+
 #' @param significance_statistic this can be "pvalue" or "fdr.pvalue".
 #' @param mapping_ID a named character vector mapping phosphosite FlankingRegion to uniprot ID/PhosLocation/FlankingRegion
 #' @param PTMSEA_OUTDIR output directory for PTMSEA results
@@ -83,147 +245,6 @@ KinaseNetwork4substrates = function(pair, limma_output, PTMSEA_output, significa
   })
 }
 
-
-#' Run PTM-SEA on the limma results
-#' @import dplyr
-#' 
-runPTMSEA = function(limma_rslt, PTMSEA_OUTDIR) {
-  limma_rslt_4gct = lapply(seq_along(limma_rslt), function(i){
-    rslt = limma_rslt[[i]] %>% arrange(-logFC)
-    rownames(rslt) = NULL
-    temp = rslt[, c("PTM.FlankingRegion", "logFC")]
-    colnames(temp) = c("PTM.FlankingRegion", names(limma_rslt)[i])
-    temp$PTM.FlankingRegion = paste0(temp$PTM.FlankingRegion, "_p")
-    temp
-  }) %>% Reduce(full_join, .) %>%
-    .[!duplicated(.$PTM.FlankingRegion), ] 
-  rownames(limma_rslt_4gct) = NULL
-  limma_rslt_4gct = 
-    tibble::column_to_rownames(limma_rslt_4gct, var="PTM.FlankingRegion")
-  write_gct(as.matrix(limma_rslt_4gct)%>%cmapR::new("GCT",mat=.), 
-    paste0(PTMSEA_OUTDIR ,"/PTM-SEA"), precision=2)
-  # run PTM-SEA
-  input_gct_file = list.files(path=PTMSEA_OUTDIR, pattern = "PTM-SEA", full.names = TRUE)
-
-  # # Download gene set database 
-  download.file(url = "https://raw.githubusercontent.com/nicolerg/ssGSEA2/refs/heads/master/db/ptmsigdb/ptm.sig.db.all.flanking.human.v2.0.0.gmt",
-                destfile = paste0(PTMSEA_OUTDIR, "/ptm.sig.db.all.flanking.human.v2.0.0.gmt"))
-  set.seed(123)
-  invisible(capture.output(ssGSEA2::run_ssGSEA2(input_gct_file,
-                    output.prefix = "PTMSEA_OUTPUT",
-                    gene.set.databases = paste0(PTMSEA_OUTDIR, "/ptm.sig.db.all.flanking.human.v2.0.0.gmt"),
-                    output.directory = PTMSEA_OUTDIR,
-                    sample.norm.type = "none", #uses actual expression values
-                    weight = 1, 
-                    correl.type = "rank", #genes are weighted by actual values 
-                    statistic = "area.under.RES",
-                    spare.cores = 4,
-                    output.score.type = "NES", 
-                    nperm = 1000, 
-                    min.overlap = 5, 
-                    extended.output = TRUE, 
-                    global.fdr = FALSE,
-                    export.signat.gct = T,
-                    param.file=T,
-                    log.file = paste0(PTMSEA_OUTDIR, "/run.log")))) 
-                    
-  return(limma_rslt_4gct)
-}
-
-
-#' Prepare the PTM-SEA results
-#' @import tidyr
-#' @import ggplot2
-#' @import dplyr
-#' @param PTMSEA_FILE_PATH the path to the PTM-SEA output file: PTMSEA_OUTPUT-combined.gct.
-#' @param output.score.type the type of score to be used in the output, default is "NES".
-#' @param sig.thresh the fdr.pvalue threshold for filtering the PTMSEA results, default is 0.05.
-#' 
-processPTMSEAresult = function(PTMSEA_FILE_PATH, output.score.type = "NES", sig.thresh = 0.05) {
-  gct_data=read.delim(PTMSEA_FILE_PATH , skip = 2, 
-                      header = TRUE, sep = "\t", check.names = FALSE) 
-  pairs = grep("fdr.pvalue", colnames(gct_data), value=T) %>% gsub("fdr.pvalue.", "", .)
-  colnames(gct_data)[colnames(gct_data) %in% pairs] =
-    paste0(output.score.type, "_", pairs)
-  # Save PTMSEA result to an excel file
-  xlsx::write.xlsx(gct_data,
-            gsub("gct", "xlsx", PTMSEA_FILE_PATH),
-            append=F, sheetName="PTMSEAonDiff",row.names = F)
-  ptmsea_rslt = lapply(pairs, function(Pair) {
-    temp = gct_data[, c("id", "Signature.set.description", "Signature.set.size", 
-                        grep(Pair, colnames(gct_data), value=T))]
-    colnames(temp) =
-      gsub(paste0("[.]",Pair),"", colnames(temp)) %>% gsub(paste0("_",Pair),"",.)
-    temp
-  }) %>% setNames(pairs)
-
-  # Make a dot plot
-  # library(tidyr)
-  gct4plot_NES =  gct_data[, c("id", grep("NES_", colnames(gct_data), value=T))]
-  colnames(gct4plot_NES) = gsub("NES_", "", colnames(gct4plot_NES))
-  gct4plot_fdr.pvalue =  gct_data[, c("id", grep("fdr.pvalue.", colnames(gct_data), value=T))]
-  colnames(gct4plot_fdr.pvalue) = gsub("fdr.pvalue.", "", colnames(gct4plot_fdr.pvalue))
-  gct4plot = full_join(gather(gct4plot_NES,key="Pair",value="NES",2:4), 
-    gather(gct4plot_fdr.pvalue,key="Pair",value="fdr.pvalue",2:4)) %>% 
-    filter(fdr.pvalue<0.05) %>% arrange(-NES) 
-  gct4plot$Regulation = ifelse(gct4plot$NES>0, "Up", "Down")
-  gct4plot$Pair = factor(gct4plot$Pair)
-  gct4plot$id = 
-    factor(gct4plot$id, levels=unique(rev(gct4plot$id)))
-  # splitted = split(gct4plot, gct4plot$Pair) %>% lapply(., function(i) {
-  #   i %>% pull(id)
-  # })
-  # shared = Reduce(intersect, splitted)
-  # shared2 = Reduce(intersect, splitted[c(1,2)])
-  # unique1 = setdiff(splitted[[1]], c(shared,shared2))
-  # unique2 = setdiff(splitted[[2]], c(shared,shared2))
-  # unique3 = setdiff(splitted[[3]], c(shared,shared2))
-  # gct4plot$id = factor(gct4plot$id, levels=unique(rev(c(shared,shared2,unique1,unique2,unique3))))
-  # gct4plot$Category = ifelse(gct4plot$id%in%shared,"Shared",
-  #                          ifelse(gct4plot$id%in%unique1,"Uniq.PNLvsPL", 
-  #                                 ifelse(gct4plot$id%in%unique2, "Uniq.HSvsPL", "Uniq.HSvsPNL")))
-  # library(ggplot2)
-  ggplot(gct4plot, aes(x=NES, y=id)) +
-    geom_point(shape=21, aes(size=fdr.pvalue, fill=Pair)) +
-    facet_wrap(~Pair, ncol=3) + 
-    ggtitle("PTM-SEA_PTMsigDB2") +
-    xlab("NES") +
-    ylab("") + labs(size="fdr.pvalue") +
-    # scale_fill_manual(values=c("purple","orange","grey")) +
-    theme_bw(base_size = 15) + 
-    scale_size(trans="reverse") +
-    guides(alpha="none", size=guide_legend(override.aes=list(shape=21))) +
-    theme(strip.text.x = element_text(size = 14)) +
-    labs(caption=paste0("fdr.pvalueCutoff = ", sig.thresh, ", pAdjustMethod = fdr"))
-
-  return(list(ptmsea_rslt=ptmsea_rslt, gct4plot=gct4plot))
-}
-
-#' @import dplyr
-#' @param PTM.FlankingRegion4PTMSEAanalysis a character vector of PTM flanking regions that have been used in PTMSEA.
-#' @param limma_rslt a list of data frames containing the limma results.
-#' 
-processLimmaResult = function(limma_rslt, PTM.FlankingRegion4PTMSEAanalysis) {
-  maps = lapply(limma_rslt, function(rslt) {
-    rslt = filter(rslt, PTM.FlankingRegion%in%PTM.FlankingRegion4PTMSEAanalysis)
-    rslt$uniprotID = rslt$Phosphosite %>% sub("_.*", "", .)
-    rslt$PTM.FlankingRegion2 = paste0(rslt$PTM.FlankingRegion, "-p")
-    rslt$PhosLocation = rslt$Phosphosite %>% sub(".*_", "", .)
-    mapUniprotPhosLocation2FlankingRegion2 = 
-      setNames(paste0(rslt$uniprotID,"\n",rslt$PhosLocation), rslt$PTM.FlankingRegion2)
-    mapUniprotPhosLocationFlankingRegion2FlankingRegion2 = 
-      setNames(paste0(rslt$uniprotID,"\n",rslt$PhosLocation,
-                    "\n",rslt$PTM.FlankingRegion), rslt$PTM.FlankingRegion2)
-    mapLogFC2FlankingRegion2 = setNames(rslt$logFC, rslt$PTM.FlankingRegion2) 
-    list(mapUniprotPhosLocation2FlankingRegion2 = 
-            mapUniprotPhosLocation2FlankingRegion2,
-         mapUniprotPhosLocationFlankingRegion2FlankingRegion2 = 
-            mapUniprotPhosLocationFlankingRegion2FlankingRegion2,
-         mapLogFC2FlankingRegion2 = mapLogFC2FlankingRegion2)
-  })
-
-  return(maps) 
-}
 
 
 
@@ -449,7 +470,7 @@ ppiNetwork4substrates = function(limma_output, PTMSEA_output, significance_cutof
     # Here effect could be logFC or the t statistics from Limma analysis
     effect = mapping_TO_effect[V(ppi_network)$name %>% 
                                  .[.%in%network_vertexIDs_4substrates]]
-    # effect = DescTools::Winsorize(z, val=c(-3,3))
+
     vertex.colors = rep("snow3", length(V(ppi_network)$name))
     vertex.colors[V(ppi_network)$name %in%ID] = alpha("purple", 0.5)
     vertex.colors[V(ppi_network)$name%in%network_vertexIDs_4substrates] =
