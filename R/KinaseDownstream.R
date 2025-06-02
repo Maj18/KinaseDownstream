@@ -139,10 +139,10 @@ processPTMSEAresult = function(PTMSEA_FILE_PATH, output.score.type = "NES", sig.
 #' 
 processLimmaResult = function(limma_rslt, PTM.FlankingRegion4PTMSEAanalysis) {
   maps = lapply(limma_rslt, function(rslt) {
-    rslt = filter(rslt, PTM.FlankingRegion%in%PTM.FlankingRegion4PTMSEAanalysis)
     rslt$uniprotID = rslt$Phosphosite %>% sub("_.*", "", .)
     rslt$PTM.FlankingRegion2 = paste0(rslt$PTM.FlankingRegion, "-p")
     rslt$PhosLocation = rslt$Phosphosite %>% sub(".*_", "", .)
+    rslt = filter(rslt, PTM.FlankingRegion2%in%PTM.FlankingRegion4PTMSEAanalysis)
     mapUniprotPhosLocation2FlankingRegion2 = 
       setNames(paste0(rslt$uniprotID,"\n",rslt$PhosLocation), rslt$PTM.FlankingRegion2)
     mapUniprotPhosLocationFlankingRegion2FlankingRegion2 = 
