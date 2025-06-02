@@ -69,7 +69,7 @@ ptmsea_rslt = ptmsea_rslt_all$ptmsea_rslt
 ```
 SignificantKinaseDotplots = ptmsea_rslt_all$plot
 ```
-![Example dotplot](https://github.com/Maj18/KinaseDownstream/blob/main/man/figures/KinaseDotplot_example.pdf)
+![Example dotplot](https://github.com/Maj18/KinaseDownstream/blob/main/man/figures/KinaseDotplot_example.png)
 
 #### Process the limma output to build maps among FlankingRegions, uniprot IDs and Phosphosites, for the kinase-substrate network analysis
 ```
@@ -110,7 +110,7 @@ invisible(capture.output(lapply(seq_along(limma_rslt), function(i) {
                             paste0(PTMSEA_OUTDIR, "/ptm.sig.db.all.flanking.human.v2.0.0.gmt")) # This is needed when flanking regions are added to the figures, otherwise, please DO NOT set outputFileSuffix.
 })))
 ```
-![Example kinase-substrate network](https://github.com/Maj18/KinaseDownstream/blob/main/man/figures/Kinase_substrates_network_example.pdf)
+![Example kinase-substrate network](https://github.com/Maj18/KinaseDownstream/blob/main/man/figures/Kinase_substrates_network_example.png)
 
 ##### Prepare proteomics dataset that matches the phosphoproteomics data
 ```
@@ -153,4 +153,4 @@ invisible(capture.output(lapply(seq_along(limma_rslt), function(i) {
 
 ```
 
-![Example PPI network](https://github.com/Maj18/KinaseDownstream/blob/main/man/figures/PPI_example.pdf)
+![Example PPI network](https://github.com/Maj18/KinaseDownstream/blob/main/man/figures/PPI_example.png)
