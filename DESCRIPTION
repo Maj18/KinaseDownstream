@@ -18,6 +18,7 @@ Imports:
     GSEABase,
     tibble,
     cmapR,
+    scales,
     ssGSEA2,
     xlsx,
     biomaRt,
