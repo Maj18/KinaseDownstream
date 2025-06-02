@@ -85,11 +85,12 @@ maps = processLimmaResult(limma_rslt, PTM.FlankingRegion4PTMSEAanalysis)
 significance_statistic = "fdr.pvalue"
 invisible(capture.output(lapply(seq_along(limma_rslt), function(i) {
   pair = names(limma_rslt)[i]
-  limma_output = limma_rslt[[i]]%>%filter(PTM.FlankingRegion%in%PTM.FlankingRegion4PTMSEAanalysis)
+  limma_output = limma_rslt[[i]]
   PTMSEA_output = ptmsea_rslt[[i]]
   mapping_regulation = maps[[i]]$mapLogFC2FlankingRegion2
   mapping_ID = maps[[i]]$mapUniprotPhosLocation2FlankingRegion2
   KinaseNetwork4substrates(pair,
+                           PTM.FlankingRegion4PTMSEAanalysis,
                            limma_output,
                            PTMSEA_output,
                            significance_cutoff = significance_cutoff, 
@@ -102,7 +103,8 @@ invisible(capture.output(lapply(seq_along(limma_rslt), function(i) {
 
   # Add flanking region to the kinase-substrate networks:
   mapping_ID = maps[[i]]$mapUniprotPhosLocationFlankingRegion2FlankingRegion2
-  KinaseNetwork4substrates(pair, limma_output,
+  KinaseNetwork4substrates(pair, PTM.FlankingRegion4PTMSEAanalysis,
+                           limma_output,
                            PTMSEA_output,
                            significance_cutoff = significance_cutoff, 
                            significance_statistic = "fdr.pvalue", 
@@ -140,11 +142,11 @@ invisible(capture.output(lapply(seq_along(limma_rslt), function(i) {
   pair = names(limma_rslt)[i]
   outdir_ppi = paste0(PTMSEA_OUTDIR, "/Network/PPI/", pair, "/")
   dir.create(outdir_ppi, recursive=T, showWarnings=F)
-  limma_output = limma_rslt[[i]]%>%filter(PTM.FlankingRegion%in%PTM.FlankingRegion4PTMSEAanalysis)
+  limma_output = limma_rslt[[i]]
   PTMSEA_output = ptmsea_rslt[[i]]
   mapping_regulation = maps[[i]]$mapLogFC2FlankingRegion2
   mapping_ID = maps[[i]]$mapUniprotPhosLocation2FlankingRegion2
-  ppiNetwork4substrates(limma_output,
+  ppiNetwork4substrates(limma_output, PTM.FlankingRegion4PTMSEAanalysis,
                         PTMSEA_output,
                         significance_cutoff = significance_cutoff, 
                         significance_statistic = significance_statistic, 
