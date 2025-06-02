@@ -28,7 +28,7 @@ library(KinaseDownstream)
 
 #### Example run:
 ```
-library(KinaseDownsgtream)
+library(KinaseDownstream)
 INDIR = "./example/"
 limma_rslt = readRDS(paste0(INDIR, "/Limma_differentialAnalysis_result.RDS"))
 ```
