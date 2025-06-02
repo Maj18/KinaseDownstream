@@ -227,25 +227,25 @@ KinaseNetwork4substrates = function(pair, PTM.FlankingRegion4PTMSEAanalysis, lim
                layout = layout, 
                # vertex.label.degree = pi/2, 
                vertex.label.cex = 0.8,
-               vertex.label = V(g)$label,
-               vertex.color = V(g)$color,
-               vertex.frame.color = V(g)$color,
+               vertex.label = igraph::V(g)$label,
+               vertex.color = igraph::V(g)$color,
+               vertex.frame.color = igraph::V(g)$color,
                # vertex size = logFC*4
                vertex.size = abs(round(c(6,as.numeric(mapping_regulation*4)))), 
                vertex.label.color = "black",
-               edge.color = E(g)$color))
+               edge.color = igraph::E(g)$color))
     dev.off()
     print(plot(g, vertex.label.dist = 0, 
                layout = layout, 
                # vertex.label.degree = pi/2, 
                vertex.label.cex = 0.8,
-               vertex.label = V(g)$label,
-               vertex.color = V(g)$color,
-               vertex.frame.color = V(g)$color,
+               vertex.label = igraph::V(g)$label,
+               vertex.color = igraph::V(g)$color,
+               vertex.frame.color = igraph::V(g)$color,
                # vertex size = logFC*4
                vertex.size = abs(round(c(6,as.numeric(mapping_regulation*4)))),
                vertex.label.color = "black",
-               edge.color = E(g)$color))
+               edge.color = igraph::E(g)$color))
   })
 }
 
