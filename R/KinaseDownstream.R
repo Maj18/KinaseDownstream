@@ -51,7 +51,6 @@ runPTMSEA = function(limma_rslt, PTMSEA_OUTDIR) {
 
 #' Prepare the PTM-SEA results
 #' @import tidyr
-#' @import ggplot2
 #' @import dplyr
 #' @param PTMSEA_FILE_PATH the path to the PTM-SEA output file: PTMSEA_OUTPUT-combined.gct.
 #' @param output.score.type the type of score to be used in the output, default is "NES".
@@ -101,7 +100,7 @@ processPTMSEAresult = function(PTMSEA_FILE_PATH, output.score.type = "NES", sig.
   #                          ifelse(gct4plot$id%in%unique1,"Uniq.PNLvsPL", 
   #                                 ifelse(gct4plot$id%in%unique2, "Uniq.HSvsPL", "Uniq.HSvsPNL")))
   # library(ggplot2)
-  plot = ggplot(gct4plot, aes(x=NES, y=id)) +
+  plot = ggplot2::ggplot(gct4plot, aes(x=NES, y=id)) +
     geom_point(shape=21, aes(size=fdr.pvalue, fill=Pair)) +
     facet_wrap(~Pair, ncol=3) + 
     ggtitle("PTM-SEA_PTMsigDB2") +
