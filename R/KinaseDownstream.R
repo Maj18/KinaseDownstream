@@ -101,18 +101,18 @@ processPTMSEAresult = function(PTMSEA_FILE_PATH, output.score.type = "NES", sig.
   #                          ifelse(gct4plot$id%in%unique1,"Uniq.PNLvsPL", 
   #                                 ifelse(gct4plot$id%in%unique2, "Uniq.HSvsPL", "Uniq.HSvsPNL")))
   # library(ggplot2)
-  plot = ggplot2::ggplot(gct4plot, aes(x=NES, y=id)) +
-    geom_point(shape=21, aes(size=fdr.pvalue, fill=Pair)) +
-    facet_wrap(~Pair, ncol=3) + 
-    ggtitle("PTM-SEA_PTMsigDB2") +
-    xlab("NES") +
-    ylab("") + labs(size="fdr.pvalue") +
+  plot = ggplot2::ggplot(gct4plot, ggplot2::aes(x=NES, y=id)) +
+    ggplot2::geom_point(shape=21, ggplo2::aes(size=fdr.pvalue, fill=Pair)) +
+    ggplot2::facet_wrap(~Pair, ncol=3) + 
+    ggplot2::ggtitle("PTM-SEA_PTMsigDB2") +
+    ggplot2::xlab("NES") +
+    ggplot2::ylab("") + ggplot2::labs(size="fdr.pvalue") +
     # scale_fill_manual(values=c("purple","orange","grey")) +
-    theme_bw(base_size = 15) + 
-    scale_size(trans="reverse") +
-    guides(alpha="none", size=guide_legend(override.aes=list(shape=21))) +
-    theme(strip.text.x = element_text(size = 14)) +
-    labs(caption=paste0("fdr.pvalueCutoff = ", sig.thresh, ", pAdjustMethod = fdr"))
+    ggplot2::theme_bw(base_size = 15) + 
+    ggplot2::scale_size(trans="reverse") +
+    ggplot2::guides(alpha="none", size=ggplot2::guide_legend(override.aes=list(shape=21))) +
+    ggplot2::theme(strip.text.x = ggplot2::element_text(size = 14)) +
+    ggplot2::labs(caption=paste0("fdr.pvalueCutoff = ", sig.thresh, ", pAdjustMethod = fdr"))
 
   # Prepare signficant kinase names for mapping onto the Manning kinase tree (http://kinhub.org/kinmap/index.html)
   fdrs = grep("fdr.pvalue", colnames(gct_data), value=T)
