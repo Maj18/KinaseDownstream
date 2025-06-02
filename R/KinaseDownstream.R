@@ -14,7 +14,9 @@ runPTMSEA = function(limma_rslt, PTMSEA_OUTDIR) {
   rownames(limma_rslt_4gct) = NULL
   limma_rslt_4gct = 
     tibble::column_to_rownames(limma_rslt_4gct, var="PTM.FlankingRegion")
-  cmapR::write_gct(as.matrix(limma_rslt_4gct)%>%cmapR::new("GCT",mat=.), 
+  cmapR::write_gct(as.matrix(limma_rslt_4gct)%>%
+  cmapR::GCT(.),
+  #cmapR::new("GCT",mat=.), 
     paste0(PTMSEA_OUTDIR ,"/PTM-SEA"), precision=2)
   # run PTM-SEA
   input_gct_file = list.files(path=PTMSEA_OUTDIR, pattern = "PTM-SEA", full.names = TRUE)
