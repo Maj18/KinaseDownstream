@@ -61,7 +61,7 @@ PTM.FlankingRegion4PTMSEAanalysis = gsub("_p", "", rownames(PTMSEA_rslt))
 PTMSEA_FILE_PATH = paste0(PTMSEA_OUTDIR,"/PTMSEA_OUTPUT-combined.gct")
 significance_cutoff = 0.01
 ptmsea_rslt_all = processPTMSEAresult(PTMSEA_FILE_PATH, output.score.type = "NES", 
-    sig.thresh=significance_cutoff)$ptmsea_rslt
+    sig.thresh=significance_cutoff)
 ptmsea_rslt = ptmsea_rslt_all$ptmsea_rslt
 ```
 
@@ -69,6 +69,7 @@ ptmsea_rslt = ptmsea_rslt_all$ptmsea_rslt
 ```
 SignificantKinaseDotplots = ptmsea_rslt_all$plot
 ```
+![Example dotplot](man/figures/KinaseDotplot_example.pdf)
 
 #### Process the limma output to build maps among FlankingRegions, uniprot IDs and Phosphosites, for the kinase-substrate network analysis
 ```
@@ -109,8 +110,9 @@ invisible(capture.output(lapply(seq_along(limma_rslt), function(i) {
                             paste0(PTMSEA_OUTDIR, "/ptm.sig.db.all.flanking.human.v2.0.0.gmt")) # This is needed when flanking regions are added to the figures, otherwise, please DO NOT set outputFileSuffix.
 })))
 ```
+![Example kinase-substrate network](man/figures/kinase_substrate_network_example.pdf)
 
-##### prepare proteomics dataset that matches the phosphoproteomics data
+##### Prepare proteomics dataset that matches the phosphoproteomics data
 ```
 # Download the psoriasis-associated proteins from the reference
 proteomics_dat = openxlsx::read.xlsx("./test/12014_2020_9293_MOESM5_ESM.xlsx", sheet = 1)
@@ -150,3 +152,5 @@ invisible(capture.output(lapply(seq_along(limma_rslt), function(i) {
 })))  
 
 ```
+
+![Example PPI network](man/figures/PPI_network_example.pdf)
