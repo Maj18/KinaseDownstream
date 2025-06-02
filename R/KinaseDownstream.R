@@ -7,7 +7,7 @@ runPTMSEA = function(limma_rslt, PTMSEA_OUTDIR) {
     rownames(rslt) = NULL
     temp = rslt[, c("PTM.FlankingRegion", "logFC")]
     colnames(temp) = c("PTM.FlankingRegion", names(limma_rslt)[i])
-    temp$PTM.FlankingRegion = paste0(temp$PTM.FlankingRegion, "_p")
+    temp$PTM.FlankingRegion = paste0(temp$PTM.FlankingRegion, "-p")
     temp
   }) %>% Reduce(full_join, .) %>%
     .[!duplicated(.$PTM.FlankingRegion), ] 
