@@ -202,17 +202,17 @@ KinaseNetwork4substrates = function(pair, PTM.FlankingRegion4PTMSEAanalysis, lim
     edge = data.frame(From=rep(ID, length(shared)), To=shared)    
     # library(igraph)
     g = igraph::graph_from_data_frame(d = edge, directed = FALSE)
-    V(g)$label = c(V(g)[[1]]$name,   #sub(".*_", "", V(g)[[1]]$name), 
-                   mapping_ID[V(g)[2:length(V(g))]$name] %>% as.character())   
+    igraph::V(g)$label = c(igraph::V(g)[[1]]$name,   #sub(".*_", "", V(g)[[1]]$name), 
+                   mapping_ID[igraph::V(g)[2:length(igraph::V(g))]$name] %>% as.character())   
     mapping_regulation = mapping_regulation[shared] 
-    E(g)$color = ifelse(regulation=="u", alpha("orange",0.25), alpha("darkturquoise",0.25))
-    V(g)$color = c(alpha("black", 0.25), ifelse(mapping_regulation<0, 
+    igraph::E(g)$color = ifelse(regulation=="u", alpha("orange",0.25), alpha("darkturquoise",0.25))
+    igraph::V(g)$color = c(alpha("black", 0.25), ifelse(mapping_regulation<0, 
                                                 alpha("darkturquoise",0.5), alpha("orange",0.5)))
     layout = layout_with_fr(g)
     # layout = layout_in_circle(g)
     dir.create(paste0(PTMSEA_OUTDIR, "/Network/kinase_substrates/", pair,"/"), 
                showWarnings = FALSE, recursive = TRUE)
-    L = length(V(g))
+    L = length(igraph::V(g))
     ID2 = gsub("/", "_", ID)
     if (output_file_suffix!="") {
       suffix = paste0("_", output_file_suffix)
@@ -467,28 +467,28 @@ ppiNetwork4substrates = function(limma_output, PTMSEA_output, significance_cutof
     ppi_network = igraph::graph_from_data_frame(interactions[, 1:2], directed = FALSE)    
     #col_gradients = colorRampPalette(c("orange", "purple"))(length(mapped_interest$STRING_id))
     # Set label color of the kinase to black, set the label colors of kinase substrate to dark grey, and set the rest as grey:
-    vertex.label.colors = rep(alpha("black", 0.5), length(V(ppi_network)$name))
-    vertex.label.colors[V(ppi_network)$name %in%ID] = alpha("black", 1)
-    vertex.label.colors[V(ppi_network)$name%in%network_vertexIDs_4substrates] = 
+    vertex.label.colors = rep(alpha("black", 0.5), length(igraph::V(ppi_network)$name))
+    vertex.label.colors[igraph::V(ppi_network)$name %in%ID] = alpha("black", 1)
+    vertex.label.colors[igraph::V(ppi_network)$name%in%network_vertexIDs_4substrates] = 
                 alpha("black", 0.8)    
     # Set the vertex colors of the kinase substrates based on the effect of the kinase substrates: orange: up-regulated, darkturquoise: down-regulated
     mapping_TO_effect = setNames(interactions2$effect, interactions2$to)
     # Here effect could be logFC or the t statistics from Limma analysis
-    effect = mapping_TO_effect[V(ppi_network)$name %>% 
+    effect = mapping_TO_effect[igraph::V(ppi_network)$name %>% 
                                  .[.%in%network_vertexIDs_4substrates]]
 
-    vertex.colors = rep("snow3", length(V(ppi_network)$name))
-    vertex.colors[V(ppi_network)$name %in%ID] = alpha("purple", 0.5)
-    vertex.colors[V(ppi_network)$name%in%network_vertexIDs_4substrates] =
+    vertex.colors = rep("snow3", length(igraph::V(ppi_network)$name))
+    vertex.colors[igraph::V(ppi_network)$name %in%ID] = alpha("purple", 0.5)
+    vertex.colors[igraph::V(ppi_network)$name%in%network_vertexIDs_4substrates] =
         ifelse(effect<0, alpha("darkturquoise",0.5), alpha("orange",0.5))    
     # Set the vertex sizes of the kinase substrates based on their effect*2, set the rest to 1, and set the kinase to 6. 
-    vertex.sizes = rep(1, length(V(ppi_network)$name))
-    vertex.sizes[V(ppi_network)$name%in%network_vertexIDs_4substrates] =
+    vertex.sizes = rep(1, length(igraph::V(ppi_network)$name))
+    vertex.sizes[igraph::V(ppi_network)$name%in%network_vertexIDs_4substrates] =
         abs(round(as.numeric(effect))*2)
-    vertex.sizes[V(ppi_network)$name %in%ID] = 10    
+    vertex.sizes[igraph::V(ppi_network)$name %in%ID] = 10    
     coords = layout_in_circle(ppi_network)
 
-    L = length(V(ppi_network))/60
+    L = length(igraph::V(ppi_network))/60
     ID2 = sub("/", "_", ID)
     pdf(paste0(outdir_ppi, "/", ID2, "_substrate_PPI.pdf"), h=7*L+2, w=10*L+2)
       print(plot(ppi_network,
