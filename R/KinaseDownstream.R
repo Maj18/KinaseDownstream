@@ -264,7 +264,7 @@ KinaseNetwork4substrates = function(pair, PTM.FlankingRegion4PTMSEAanalysis, lim
 #' @param proteomics a character vector of proteomics protein uniprot IDs that are aquired from the same study system as the phosphoproteomics data.
 #' @param outdir_ppi the output directory for the PPI network.
 #' 
-ppiNetwork4substrates = function(limma_output, PTMSEA_output, significance_cutoff=0.05, 
+ppiNetwork4substrates = function(limma_output, PTM.FlankingRegion4PTMSEAanalysis, PTMSEA_output, significance_cutoff=0.05, 
                                  significance_statistic="fdr.pvalue", mapping_ID,
                                  mapping_regulation, proteomics, outdir_ppi,
                                  PTMsigDB_collection_file,
