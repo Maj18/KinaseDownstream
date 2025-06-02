@@ -24,9 +24,7 @@ To check whether the package has been properly installed, start a R session and 
 library(KinaseDownstream)
 ```
 
-## For an example run (in R) after having KinaseDownstream being loaded:
-
-#### Example run:
+## Example run:
 ```
 library(KinaseDownstream)
 INDIR = "./example/"
