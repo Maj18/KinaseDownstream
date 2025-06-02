@@ -110,7 +110,7 @@ processPTMSEAresult = function(PTMSEA_FILE_PATH, output.score.type = "NES", sig.
     # scale_fill_manual(values=c("purple","orange","grey")) +
     ggplot2::theme_bw(base_size = 15) + 
     ggplot2::scale_size(trans="reverse") +
-    ggplot2::guides(scales::alpha="none", size=ggplot2::guide_legend(override.aes=list(shape=21))) +
+    ggplot2::guides(size=ggplot2::guide_legend(override.aes=list(shape=21))) +
     ggplot2::theme(strip.text.x = ggplot2::element_text(size = 14)) +
     ggplot2::labs(caption=paste0("fdr.pvalueCutoff = ", sig.thresh, ", pAdjustMethod = fdr"))
 
