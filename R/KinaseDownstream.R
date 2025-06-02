@@ -102,7 +102,7 @@ processPTMSEAresult = function(PTMSEA_FILE_PATH, output.score.type = "NES", sig.
   #                                 ifelse(gct4plot$id%in%unique2, "Uniq.HSvsPL", "Uniq.HSvsPNL")))
   # library(ggplot2)
   plot = ggplot2::ggplot(gct4plot, ggplot2::aes(x=NES, y=id)) +
-    ggplot2::geom_point(shape=21, ggplo2::aes(size=fdr.pvalue, fill=Pair)) +
+    ggplot2::geom_point(shape=21, ggplot2::aes(size=fdr.pvalue, fill=Pair)) +
     ggplot2::facet_wrap(~Pair, ncol=3) + 
     ggplot2::ggtitle("PTM-SEA_PTMsigDB2") +
     ggplot2::xlab("NES") +
