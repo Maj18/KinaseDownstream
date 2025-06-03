@@ -2,6 +2,8 @@
 
 This package provides functions to visualize the significantly enriched kinases in the phosphoproteomics data, the networks between each kinase, the downstream targets and their immediate String_db interacting neighbors that are observed from the matching proteomics data, facilitating the understanding of kinase interactions and their biological implications.
 
+![Diagram of the KinaseDownstream package](https://github.com/Maj18/KinaseDownstream/blob/main/man/figures/Diagram.png)
+
 # How to use this package
 
 To install the permuDE package in a R session:
