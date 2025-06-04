@@ -50,15 +50,12 @@ runPTMSEA = function(limma_rslt, PTMSEA_OUTDIR) {
 getPTMsubstrates4PTMSEAanalysis = function(limma_rslt) {
   limma_rslt_4gct = lapply(seq_along(limma_rslt), function(i){
     rslt = limma_rslt[[i]] %>% arrange(-logFC)
-    rownames(rslt) = NULL
-    temp = rslt[, c("PTM.FlankingRegion", "logFC")]
-    colnames(temp) = c("PTM.FlankingRegion", names(limma_rslt)[i])
-    temp$PTM.FlankingRegion = paste0(temp$PTM.FlankingRegion, "-p")
-    temp
+    rslt
   }) %>% Reduce(full_join, .) %>%
     .[!duplicated(.$PTM.FlankingRegion), ] 
   limma_rslt_4gct$Phosphosite
 }
+
 
 
 #' Prepare the PTM-SEA results
