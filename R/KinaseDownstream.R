@@ -135,7 +135,7 @@ processPTMSEAresult = function(PTMSEA_FILE_PATH, output.score.type = "NES", sig.
 
 #' @import dplyr
 #' @description Prepare the input for PhosNetVis
-prepInput4PhosNetVis = function(limma_output, PTM.FlankingRegion4PTMSEAanalysis, 
+prepInput4PhosNetVis = function(pair, limma_output, PTM.FlankingRegion4PTMSEAanalysis, 
                                 PTMSEA_output, significance_cutoff=0.05, 
                                 significance_statistic="fdr.pvalue", 
                                 PTMsigDB_collection_file) {

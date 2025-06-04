@@ -130,7 +130,7 @@ invisible(capture.output(lapply(seq_along(limma_rslt), function(i) {
   pair = names(limma_rslt)[i]
   limma_output = limma_rslt[[i]]
   PTMSEA_output = ptmsea_rslt[[i]]
-  prepInput4PhosNetVis(limma_output, PTM.FlankingRegion4PTMSEAanalysis, 
+  prepInput4PhosNetVis(pair, limma_output, PTM.FlankingRegion4PTMSEAanalysis, 
                                 PTMSEA_output, significance_cutoff=0.05, 
                                 significance_statistic="fdr.pvalue", 
                                 PTMsigDB_collection_file = 
