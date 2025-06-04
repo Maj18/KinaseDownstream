@@ -168,6 +168,7 @@ invisible(capture.output(lapply(seq_along(limma_rslt), function(i) {
   mapping_ID = maps[[i]]$mapUniprotPhosLocation2FlankingRegion2
   ppiNetwork4substrates(limma_output, PTM.FlankingRegion4PTMSEAanalysis,
                         PTMSEA_output,
+                        PTMSEA_OUTDIR = PTMSEA_OUTDIR,
                         significance_cutoff = significance_cutoff, 
                         significance_statistic = significance_statistic, 
                         mapping_ID = mapping_ID,
