@@ -123,12 +123,50 @@ processPTMSEAresult = function(PTMSEA_FILE_PATH, output.score.type = "NES", sig.
 		  gsub("KINASE-iKiP_", "", .) %>% stringr::str_split(., "/|-|[.]") %>% 
 		  unlist() %>% paste0(., collapse=",")
     dir.create(PTMSEA_OUTDIR, showWarnings = FALSE, recursive = TRUE)
+    dir.create(paste0(PTMSEA_OUTDIR, "/KinaseGroup/", N), 
+               showWarnings = FALSE, recursive = TRUE)
 	  writeLines(kinaseList, 
-		  paste0(PTMSEA_OUTDIR, "/SigKinaseList_", N, ".txt"))
+		  paste0(PTMSEA_OUTDIR, "/KinaseGroup/", N, "/SigKinaseList_", N, ".txt"))
   }
 
   return(list(ptmsea_rslt=ptmsea_rslt, gct4plot=gct4plot, plot=plot))
 }
+
+
+#' @import dplyr
+#' @description Prepare the input for PhosNetVis
+prepInput4PhosNetVis = function(limma_output, PTM.FlankingRegion4PTMSEAanalysis, 
+                                PTMSEA_output, significance_cutoff=0.05, 
+                                significance_statistic="fdr.pvalue", 
+                                PTMsigDB_collection_file) {
+  limma_output$PTM.FlankingRegion2 = paste0(limma_output$PTM.FlankingRegion, "-p")
+  limma_output = limma_output %>%
+      dplyr::filter(PTM.FlankingRegion2%in%PTM.FlankingRegion4PTMSEAanalysis)
+  limma_output$uniprotID = limma_output$Phosphosite %>% sub("_.*", "", .)
+  limma_output$PhosLocation = limma_output$Phosphosite %>% sub(".*_", "", .)
+  limma_output = limma_output%>% 
+    dplyr::select(uniprotID, PhosLocation, PTM.FlankingRegion2, everything()) 
+  # get significant PTMsigDB terms
+  sigIDs = PTMSEA_output[PTMSEA_output[,significance_statistic,drop=T]<significance_cutoff, ] %>% 
+    pull(id) %>% .[!is.na(.)] 
+  # import PTMsigDB.v2 collection
+  ptmsigdb = GSEABase::getGmt(PTMsigDB_collection_file)
+  ptmsigdb0 = lapply(ptmsigdb, function(K) {
+    data.frame(Term=K@setName, Phosphosite=K@geneIds)
+  }) %>% Reduce(rbind, .)
+  ptmsigdb2 = as.data.frame(stringr::str_split_fixed(ptmsigdb0$Phosphosite,";",2)) %>%
+    setNames(c("Phosphosite", "Regulation"))
+  ptmsigdb3 = data.frame(Term=ptmsigdb0$Term,
+                               PTM.FlankingRegion2=ptmsigdb2$Phosphosite,
+                               Regulation=ptmsigdb2$Regulation) 
+  dir.create(paste0(OUTDIR_PTMSEA, "/CollectiveKinaseTargetNetwork/"), showWarnings = F, recursive = T)
+  dplyr::inner_join(limma_output, ptmsigdb3, by="PTM.FlankingRegion2", relationship = "many-to-many") %>%
+    dplyr::select(Term, uniprotID, PhosLocation, logFC, P.Value) %>%
+    setNames(c("KinaseID", "TargetID", "PhosphoSiteID", "log2FC", "pValue")) %>%
+    write.csv(paste0(OUTDIR_PTMSEA, "/CollectiveKinaseTargetNetwork/", 
+    pair, "_input4PhosNetVis.csv"), row.names = F)
+}
+
 
 
 
@@ -158,6 +196,10 @@ processLimmaResult = function(limma_rslt, PTM.FlankingRegion4PTMSEAanalysis) {
 
   return(maps) 
 }
+
+
+
+
 
 
 

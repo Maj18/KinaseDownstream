@@ -124,6 +124,21 @@ invisible(capture.output(lapply(seq_along(limma_rslt), function(i) {
 
 > In the example kinase-substrate network plot above, the nodes represent the kinases (grey) and their downstream targets, while the edges represent the regulation status of interactions in the PTMsigDB (upregulated: orange or downregulated: turquoise). The color of the substrate nodes indicates the regulation status (upregulated: orange or downregulated: turquoise) based on the phosphoproteomics data.
 
+Save the kinase-substrate network as csv file for collective kinase-substrate network analysis using PhosNetVis.
+```
+invisible(capture.output(lapply(seq_along(limma_rslt), function(i) {
+  pair = names(limma_rslt)[i]
+  limma_output = limma_rslt[[i]]
+  PTMSEA_output = ptmsea_rslt[[i]]
+  prepInput4PhosNetVis(limma_output, PTM.FlankingRegion4PTMSEAanalysis, 
+                                PTMSEA_output, significance_cutoff=0.05, 
+                                significance_statistic="fdr.pvalue", 
+                                PTMsigDB_collection_file = 
+                                paste0(OUTDIR_PTMSEA, "/ptm.sig.db.all.flanking.human.v2.0.0.gmt"))
+})))
+
+```
+
 ##### Prepare proteomics dataset that matches the phosphoproteomics data
 ```
 # Download the psoriasis-associated proteins from the reference
