@@ -151,6 +151,7 @@ prepInput4PhosNetVis = function(pair, limma_output, PTMsubstrates4PTMSEAanalysis
   limma_output$PTM.FlankingRegion2 = paste0(limma_output$PTM.FlankingRegion, "-p")
   limma_output = limma_output %>%
       filter(Phosphosite%in%PTMsubstrates4PTMSEAanalysis)
+  head(limma_output)
   limma_output$uniprotID = limma_output$Phosphosite %>% sub("_.*", "", .)
   limma_output$PhosLocation = limma_output$Phosphosite %>% sub(".*_", "", .)
   limma_output = limma_output%>% 
