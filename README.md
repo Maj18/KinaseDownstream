@@ -50,8 +50,8 @@ $HSvsPNL
 ```
 PTMSEA_OUTDIR = "./"
 PTMSEA_rslt = runPTMSEA(limma_rslt, PTMSEA_OUTDIR)
-# Get the flanking regions that have been used for PTMSEA analysis
-PTM.FlankingRegion4PTMSEAanalysis = gsub("_p", "", rownames(PTMSEA_rslt))
+# Get the PTM substrates that have been used for PTMSEA analysis
+PTMsubstrates4PTMSEAanalysis = getPTMsubstrates4PTMSEAanalysis(limma_rslt)
 ```
 
 **Note:** For the moment, we only support the PTMSEA analysis (based on PTMsigDB2.0) with the flanking regions of the phosphosites, which are defined as 7 amino acids upstream and downstream of the phosphosite, in human. The PTMSEA analysis is performed on the phosphoproteomics data that has been processed by limma. 
@@ -80,7 +80,7 @@ The significant kinases can be found in the SigKinaseList_*.txt within PTMSEA_OU
 
 #### Process the limma output to build maps among FlankingRegions, uniprot IDs and Phosphosites, for the kinase-substrate network analysis
 ```
-maps = processLimmaResult(limma_rslt, PTM.FlankingRegion4PTMSEAanalysis)
+maps = processLimmaResult(limma_rslt, PTMsubstrates4PTMSEAanalysis)
 ```
 
 #### Run the kinase-substrate network analysis for each pair of conditions
@@ -93,7 +93,7 @@ invisible(capture.output(lapply(seq_along(limma_rslt), function(i) {
   mapping_regulation = maps[[i]]$mapLogFC2FlankingRegion2
   mapping_ID = maps[[i]]$mapUniprotPhosLocation2FlankingRegion2
   KinaseNetwork4substrates(pair,
-                           PTM.FlankingRegion4PTMSEAanalysis,
+                           PTMsubstrates4PTMSEAanalysis,
                            limma_output,
                            PTMSEA_output,
                            significance_cutoff = significance_cutoff, 
@@ -106,7 +106,7 @@ invisible(capture.output(lapply(seq_along(limma_rslt), function(i) {
 
   # Add flanking region to the kinase-substrate networks:
   mapping_ID = maps[[i]]$mapUniprotPhosLocationFlankingRegion2FlankingRegion2
-  KinaseNetwork4substrates(pair, PTM.FlankingRegion4PTMSEAanalysis,
+  KinaseNetwork4substrates(pair, PTMsubstrates4PTMSEAanalysis,
                            limma_output,
                            PTMSEA_output,
                            significance_cutoff = significance_cutoff, 
@@ -130,7 +130,7 @@ invisible(capture.output(lapply(seq_along(limma_rslt), function(i) {
   pair = names(limma_rslt)[i]
   limma_output = limma_rslt[[i]]
   PTMSEA_output = ptmsea_rslt[[i]]
-  prepInput4PhosNetVis(pair, limma_output, PTM.FlankingRegion4PTMSEAanalysis, 
+  prepInput4PhosNetVis(pair, limma_output, PTMsubstrates4PTMSEAanalysis, 
                                 PTMSEA_output, significance_cutoff=0.05, 
                                 significance_statistic="fdr.pvalue", 
                                 PTMsigDB_collection_file = 
@@ -166,7 +166,7 @@ invisible(capture.output(lapply(seq_along(limma_rslt), function(i) {
   PTMSEA_output = ptmsea_rslt[[i]]
   mapping_regulation = maps[[i]]$mapLogFC2FlankingRegion2
   mapping_ID = maps[[i]]$mapUniprotPhosLocation2FlankingRegion2
-  ppiNetwork4substrates(limma_output, PTM.FlankingRegion4PTMSEAanalysis,
+  ppiNetwork4substrates(limma_output, PTMsubstrates4PTMSEAanalysis,
                         PTMSEA_output,
                         PTMSEA_OUTDIR = PTMSEA_OUTDIR,
                         significance_cutoff = significance_cutoff, 

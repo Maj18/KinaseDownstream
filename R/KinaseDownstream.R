@@ -46,7 +46,19 @@ runPTMSEA = function(limma_rslt, PTMSEA_OUTDIR) {
   return(limma_rslt_4gct)
 }
 
-
+# TODO: Add a function to get the substrate phosphosites ID that has been use in PTMSEA analysis, modify the rest of the code accordingly
+getPTMsubstrates4PTMSEAanalysis = function(limma_rslt) {
+  limma_rslt_4gct = lapply(seq_along(limma_rslt), function(i){
+    rslt = limma_rslt[[i]] %>% arrange(-logFC)
+    rownames(rslt) = NULL
+    temp = rslt[, c("PTM.FlankingRegion", "logFC")]
+    colnames(temp) = c("PTM.FlankingRegion", names(limma_rslt)[i])
+    temp$PTM.FlankingRegion = paste0(temp$PTM.FlankingRegion, "-p")
+    temp
+  }) %>% Reduce(full_join, .) %>%
+    .[!duplicated(.$PTM.FlankingRegion), ] 
+  limma_rslt_4gct$Phosphosite
+}
 
 
 #' Prepare the PTM-SEA results
@@ -135,13 +147,13 @@ processPTMSEAresult = function(PTMSEA_FILE_PATH, output.score.type = "NES", sig.
 
 #' @import dplyr
 #' @description Prepare the input for PhosNetVis
-prepInput4PhosNetVis = function(pair, limma_output, PTM.FlankingRegion4PTMSEAanalysis, 
+prepInput4PhosNetVis = function(pair, limma_output, PTMsubstrates4PTMSEAanalysis, 
                                 PTMSEA_output, significance_cutoff=0.05, 
                                 significance_statistic="fdr.pvalue", 
                                 PTMsigDB_collection_file) {
   limma_output$PTM.FlankingRegion2 = paste0(limma_output$PTM.FlankingRegion, "-p")
   limma_output = limma_output %>%
-      dplyr::filter(PTM.FlankingRegion2%in%PTM.FlankingRegion4PTMSEAanalysis)
+      dplyr::filter(Phosphosite%in%PTMsubstrates4PTMSEAanalysis)
   limma_output$uniprotID = limma_output$Phosphosite %>% sub("_.*", "", .)
   limma_output$PhosLocation = limma_output$Phosphosite %>% sub(".*_", "", .)
   limma_output = limma_output%>% 
@@ -172,15 +184,15 @@ prepInput4PhosNetVis = function(pair, limma_output, PTM.FlankingRegion4PTMSEAana
 
 
 #' @import dplyr
-#' @param PTM.FlankingRegion4PTMSEAanalysis a character vector of PTM flanking regions that have been used in PTMSEA.
+#' @param PTMsubstrates4PTMSEAanalysis a character vector of PTM flanking regions that have been used in PTMSEA.
 #' @param limma_rslt a list of data frames containing the limma results.
 #' 
-processLimmaResult = function(limma_rslt, PTM.FlankingRegion4PTMSEAanalysis) {
+processLimmaResult = function(limma_rslt, PTMsubstrates4PTMSEAanalysis) {
   maps = lapply(limma_rslt, function(rslt) {
     rslt$uniprotID = rslt$Phosphosite %>% sub("_.*", "", .)
     rslt$PTM.FlankingRegion2 = paste0(rslt$PTM.FlankingRegion, "-p")
     rslt$PhosLocation = rslt$Phosphosite %>% sub(".*_", "", .)
-    rslt = filter(rslt, PTM.FlankingRegion2%in%PTM.FlankingRegion4PTMSEAanalysis)
+    rslt = filter(rslt, Phosphosite%in%PTMsubstrates4PTMSEAanalysis)
     mapUniprotPhosLocation2FlankingRegion2 = 
       setNames(paste0(rslt$uniprotID,"\n",rslt$PhosLocation), rslt$PTM.FlankingRegion2)
     mapUniprotPhosLocationFlankingRegion2FlankingRegion2 = 
@@ -212,12 +224,12 @@ processLimmaResult = function(limma_rslt, PTM.FlankingRegion4PTMSEAanalysis) {
 #' @param output_file_suffix a suffix for the output file names, default is empty string. If you want to add FlankingRegion to the plot, set output_file_suffix = "wPhosphosites", otherwise set it to "".
 #' @import igraph
 #' @import dplyr
-KinaseNetwork4substrates = function(pair, PTM.FlankingRegion4PTMSEAanalysis, limma_output, PTMSEA_output, significance_cutoff=0.05, 
+KinaseNetwork4substrates = function(pair, PTMsubstrates4PTMSEAanalysis, limma_output, PTMSEA_output, significance_cutoff=0.05, 
                                  significance_statistic="fdr.pvalue", mapping_ID, PTMSEA_OUTDIR,
                                  mapping_regulation, output_file_suffix="", PTMsigDB_collection_file) {
   limma_output$PTM.FlankingRegion2 = paste0(limma_output$PTM.FlankingRegion, "-p")
   limma_output = limma_output %>%
-      filter(PTM.FlankingRegion2%in%PTM.FlankingRegion4PTMSEAanalysis)
+      filter(Phosphosite%in%PTMsubstrates4PTMSEAanalysis)
   limma_output$uniprotID = limma_output$Phosphosite %>% sub("_.*", "", .)
   limma_output$PhosLocation = limma_output$Phosphosite %>% sub(".*_", "", .)
   limma_output = limma_output%>% dplyr::select(uniprotID, PhosLocation, PTM.FlankingRegion2, everything()) 
@@ -306,8 +318,8 @@ KinaseNetwork4substrates = function(pair, PTM.FlankingRegion4PTMSEAanalysis, lim
 #' @param proteomics a character vector of proteomics protein uniprot IDs that are aquired from the same study system as the phosphoproteomics data.
 #' @param outdir_ppi the output directory for the PPI network.
 #' 
-ppiNetwork4substrates = function(limma_output, PTM.FlankingRegion4PTMSEAanalysis, PTMSEA_output,       
-                                 PTMSEA_OUTPUT, significance_cutoff=0.05, 
+ppiNetwork4substrates = function(limma_output, PTMsubstrates4PTMSEAanalysis, PTMSEA_output,       
+                                 PTMSEA_OUTDIR, significance_cutoff=0.05, 
                                  significance_statistic="fdr.pvalue", mapping_ID,
                                  mapping_regulation, proteomics, outdir_ppi,
                                  PTMsigDB_collection_file,
@@ -315,7 +327,7 @@ ppiNetwork4substrates = function(limma_output, PTM.FlankingRegion4PTMSEAanalysis
   dir.create(outdir_ppi, recursive = T, showWarnings = F)
   limma_output$PTM.FlankingRegion2 = paste0(limma_output$PTM.FlankingRegion, "-p")
   limma_output = limma_output %>%
-      filter(PTM.FlankingRegion2%in%PTM.FlankingRegion4PTMSEAanalysis)
+      filter(Phosphosite%in%PTMsubstrates4PTMSEAanalysis)
   limma_output$uniprotID = limma_output$Phosphosite %>% sub("_.*", "", .)
   limma_output$PhosLocation = limma_output$Phosphosite %>% sub(".*_", "", .)
   limma_output = limma_output%>% dplyr::select(uniprotID, PhosLocation, PTM.FlankingRegion2, everything()) 
