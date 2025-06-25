@@ -131,8 +131,7 @@ processPTMSEAresult = function(PTMSEA_FILE_PATH, output.score.type = "NES", sig.
 	  kinaseList = gct_data %>% filter(gct_data[,fdr,drop=T]<sig.thresh) %>% pull(id) %>% 
 		  grep("KINASE", ., value=T) %>% gsub("KINASE-PSP_", "", .) %>% 
 		  gsub("KINASE-iKiP_", "", .) %>% stringr::str_split(., "/|[.]") %>% 
-      gsub("-.*", "", .) %>%
-		  unlist() %>% paste0(., collapse=",")
+		  unlist() %>% gsub("-.*", "", .) %>% paste0(., collapse=",")
     dir.create(PTMSEA_OUTDIR, showWarnings = FALSE, recursive = TRUE)
     dir.create(paste0(PTMSEA_OUTDIR, "/KinaseGroup/", N), 
                   showWarnings = FALSE, recursive = TRUE)
@@ -148,8 +147,7 @@ processPTMSEAresult = function(PTMSEA_FILE_PATH, output.score.type = "NES", sig.
 	  kinaseList = gct_data %>% pull(id) %>% 
 		  grep("KINASE", ., value=T) %>% gsub("KINASE-PSP_", "", .) %>% 
 		  gsub("KINASE-iKiP_", "", .) %>% stringr::str_split(., "/|[.]") %>% 
-      gsub("-.*", "", .) %>%
-		  unlist() %>% paste0(., collapse=",")
+      unlist() %>% gsub("-.*", "", .) %>% paste0(., collapse=",")
     dir.create(PTMSEA_OUTDIR, showWarnings = FALSE, recursive = TRUE)
     dir.create(paste0(PTMSEA_OUTDIR, "/KinaseGroup/", N), 
                   showWarnings = FALSE, recursive = TRUE)
