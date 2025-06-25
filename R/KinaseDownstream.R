@@ -227,8 +227,8 @@ KinaseNetwork4substrates = function(pair, PTMsubstrates4PTMSEAanalysis, limma_ou
   limma_output$PTM.FlankingRegion2 = paste0(limma_output$PTM.FlankingRegion, "-p")
   limma_output = limma_output %>%
       filter(Phosphosite%in%PTMsubstrates4PTMSEAanalysis)
-  # limma_output$uniprotID = limma_output$Phosphosite %>% sub("_.*", "", .)
-  # limma_output$PhosLocation = limma_output$Phosphosite %>% sub(".*_", "", .)
+  limma_output$uniprotID = limma_output$Phosphosite %>% sub(":.*", "", .)
+  limma_output$PhosLocation = limma_output$Phosphosite %>% sub(".*:", "", .)
   limma_output = limma_output%>% dplyr::select(uniprotID, PhosLocation, PTM.FlankingRegion2, everything()) 
   # get significant PTMsigDB terms
   sigIDs = PTMSEA_output[PTMSEA_output[,significance_statistic,drop=T]<significance_cutoff, ] %>% 
