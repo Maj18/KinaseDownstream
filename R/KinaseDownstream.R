@@ -124,18 +124,37 @@ processPTMSEAresult = function(PTMSEA_FILE_PATH, output.score.type = "NES", sig.
     ggplot2::labs(caption=paste0("fdr.pvalueCutoff = ", sig.thresh, ", pAdjustMethod = fdr"))
 
   # Prepare signficant kinase names for mapping onto the Manning kinase tree (http://kinhub.org/kinmap/index.html)
+  ## Only significant kinases
   fdrs = grep("fdr.pvalue", colnames(gct_data), value=T)
   for (fdr in fdrs) {
 	  N = gsub("fdr.pvalue.", "", fdr)
 	  kinaseList = gct_data %>% filter(gct_data[,fdr,drop=T]<sig.thresh) %>% pull(id) %>% 
 		  grep("KINASE", ., value=T) %>% gsub("KINASE-PSP_", "", .) %>% 
-		  gsub("KINASE-iKiP_", "", .) %>% stringr::str_split(., "/|-|[.]") %>% 
+		  gsub("KINASE-iKiP_", "", .) %>% stringr::str_split(., "/|[.]") %>% 
+      gsub("-.*", "", .) %>%
 		  unlist() %>% paste0(., collapse=",")
     dir.create(PTMSEA_OUTDIR, showWarnings = FALSE, recursive = TRUE)
     dir.create(paste0(PTMSEA_OUTDIR, "/KinaseGroup/", N), 
-               showWarnings = FALSE, recursive = TRUE)
+                  showWarnings = FALSE, recursive = TRUE)
 	  writeLines(kinaseList, 
-		  paste0(PTMSEA_OUTDIR, "/KinaseGroup/", N, "/SigKinaseList_", N, ".txt"))
+		  paste0(PTMSEA_OUTDIR, "/KinaseGroup/", N, "/SigKinaseList_", N, "_onlySigKinases.txt"))
+  }
+
+  # Prepare signficant kinase names for mapping onto the Manning kinase tree (http://kinhub.org/kinmap/index.html)
+  ## All kinases
+  fdrs = grep("fdr.pvalue", colnames(gct_data), value=T)
+  for (fdr in fdrs) {
+	  N = gsub("fdr.pvalue.", "", fdr)
+	  kinaseList = gct_data %>% pull(id) %>% 
+		  grep("KINASE", ., value=T) %>% gsub("KINASE-PSP_", "", .) %>% 
+		  gsub("KINASE-iKiP_", "", .) %>% stringr::str_split(., "/|[.]") %>% 
+      gsub("-.*", "", .) %>%
+		  unlist() %>% paste0(., collapse=",")
+    dir.create(PTMSEA_OUTDIR, showWarnings = FALSE, recursive = TRUE)
+    dir.create(paste0(PTMSEA_OUTDIR, "/KinaseGroup/", N), 
+                  showWarnings = FALSE, recursive = TRUE)
+	  writeLines(kinaseList, 
+		  paste0(PTMSEA_OUTDIR, "/KinaseGroup/", N, "/SigKinaseList_", N, "_allKinases.txt"))
   }
 
   return(list(ptmsea_rslt=ptmsea_rslt, gct4plot=gct4plot, plot=plot))
@@ -350,7 +369,7 @@ ppiNetwork4substrates_STRING = function(limma_output, PTMsubstrates4PTMSEAanalys
   string_db = STRINGdb::STRINGdb$new(version = "11.5", species = 9606, score_threshold = 700)
   # Map proteomics protein names to STRING IDs
   mapped_proteomics = string_db$map(data.frame(protein=proteomics), 
-                            "protein", removeUnmappedRows=TRUE)  
+                                          "protein", removeUnmappedRows=TRUE)  
   # Get STRING IDs for our significant kianse substrates all together
   # Get the substrates from PTMsigDB for the current ID/term (mostly kinase-related terms)
   substrates_all = ptmsigdb3 %>% filter(Term%in%sigIDs) %>% pull(Phosphosite)
