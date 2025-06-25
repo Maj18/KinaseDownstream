@@ -536,8 +536,10 @@ ppiNetwork4substrates_STRING = function(limma_output, PTMsubstrates4PTMSEAanalys
           mutate(uniprotID = gsub("[(]|[)]", "", uniprotID))
       )  %>% left_join(
         data.frame(Phosphosite = names(mapping_regulation),
-                   effect = stringr::str_split_fixed(mapping_regulation, "[.]", 2)%>%pull(V1),
-                   sig.stat = stringr::str_split_fixed(mapping_regulation, "[.]", 2)%>%pull(V2),
+                   effect = stringr::str_split_fixed(mapping_regulation,"[.]",2)%>%
+                      as.data.frame()%>%pull(V1),
+                   sig.stat = stringr::str_split_fixed(mapping_regulation,"[.]",2)%>%
+                      as.data.frame()%>%pull(V2),
                    stringsAsFactors = FALSE),
       )
     # mapping_TO_regualtion = setNames(interactions2$Regulation, interactions2$to)
