@@ -201,7 +201,8 @@ prepInput4PhosNetVis = function(pair, limma_output, PTMsubstrates4PTMSEAanalysis
 #' @param PTMsubstrates4PTMSEAanalysis a character vector of PTM flanking regions that have been used in PTMSEA.
 #' @param limma_rslt a list of data frames containing the limma results.
 #' 
-processLimmaResult = function(limma_rslt, PTMsubstrates4PTMSEAanalysis) {
+processLimmaResult = function(limma_rslt, PTMsubstrates4PTMSEAanalysis, 
+                              significance_statistic="adj.P.Val") {
   maps = lapply(limma_rslt, function(rslt) {
     rslt$uniprotID = rslt$Phosphosite %>% sub(":.*", "", .)
     rslt$PTM.FlankingRegion2 = paste0(rslt$PTM.FlankingRegion, "-p")
@@ -212,7 +213,7 @@ processLimmaResult = function(limma_rslt, PTMsubstrates4PTMSEAanalysis) {
     mapUniprotPhosLocationFlankingRegion2FlankingRegion2 = 
       setNames(paste0(rslt$uniprotID,"\n",rslt$PhosLocation,
                     "\n",rslt$PTM.FlankingRegion), rslt$PTM.FlankingRegion2)
-    mapLogFC2FlankingRegion2 = setNames(rslt$logFC, rslt$PTM.FlankingRegion2) 
+    mapLogFC2FlankingRegion2 = setNames(paste0(rslt$logFC,";",rslt[,significance_statistic,drop=T]), rslt$PTM.FlankingRegion2) 
     list(mapUniprotPhosLocation2FlankingRegion2 = 
             mapUniprotPhosLocation2FlankingRegion2,
          mapUniprotPhosLocationFlankingRegion2FlankingRegion2 = 
@@ -333,8 +334,9 @@ KinaseNetwork4substrates = function(pair, PTMsubstrates4PTMSEAanalysis, limma_ou
 #' @param outdir_ppi the output directory for the PPI network.
 #' 
 ppiNetwork4substrates_STRING = function(limma_output, PTMsubstrates4PTMSEAanalysis, PTMSEA_output,       
-                                 PTMSEA_OUTDIR, significance_cutoff=1, 
-                                 significance_statistic="fdr.pvalue", mapping_ID,
+                                 PTMSEA_OUTDIR, significance_cutoff4PTMSEA=1, 
+                                 significance_cutoff4limma=0.05, logFCcutoff4limma=0.5, 
+                                 significance_statistic4PTMSEA="fdr.pvalue", mapping_ID,
                                  mapping_regulation, proteomics, outdir_ppi,
                                  PTMsigDB_collection_file,
                                  uniprot_provided=T) {
@@ -348,7 +350,7 @@ ppiNetwork4substrates_STRING = function(limma_output, PTMsubstrates4PTMSEAanalys
   
   # get significant PTMsigDB terms
   sigIDs = 
-    PTMSEA_output[PTMSEA_output[,significance_statistic,drop=T]<significance_cutoff, ] %>% 
+    PTMSEA_output[PTMSEA_output[,significance_statistic4PTMSEA,drop=T]<significance_cutoff, ] %>% 
     pull(id) %>% .[!is.na(.)]  
   
   # import PTMsigDB.v2 collection
@@ -534,7 +536,9 @@ ppiNetwork4substrates_STRING = function(limma_output, PTMsubstrates4PTMSEAanalys
           mutate(uniprotID = gsub("[(]|[)]", "", uniprotID))
       )  %>% left_join(
         data.frame(Phosphosite = names(mapping_regulation),
-                   effect = mapping_regulation, stringsAsFactors = FALSE),
+                   effect = stringr::str_split_fixed(mapping_regulation, "[.]", 2)%>%pull(V1),
+                   sig.stat = stringr::str_split_fixed(mapping_regulation, "[.]", 2)%>%pull(V2),
+                   stringsAsFactors = FALSE),
       )
     # mapping_TO_regualtion = setNames(interactions2$Regulation, interactions2$to)
     # regulations_ID = mapping_TO_regualtion[filter(interactions,from%in%ID) %>% pull(to)]    
@@ -565,6 +569,15 @@ ppiNetwork4substrates_STRING = function(limma_output, PTMsubstrates4PTMSEAanalys
     # Here effect could be logFC or the t statistics from Limma analysis
     effect = mapping_TO_effect[igraph::V(ppi_network)$name %>% 
                                  .[.%in%network_vertexIDs_4substrates]]
+    mapping_TO_sigStat = setNames(interactions2$sig.stat, interactions2$to) %>%
+      tapply(., names(.), mean)
+    sig.stat = mapping_TO_sigStat[igraph::V(ppi_network)$name %>% 
+                                 .[.%in%network_vertexIDs_4substrates]]
+
+    # Add signifcance info
+    vertex.label[vertex.label%in%network_vertexIDs_4substrates] =
+        ifelse((abs(effect)>logFCcutoff4limma)&(sig.stat<significance_cutoff4limma), 
+                paste0(vertex.label, "*"), vertex.label)
 
     vertex.colors = rep("snow3", length(igraph::V(ppi_network)$name))
     vertex.colors[igraph::V(ppi_network)$name %in%ID] = scales::alpha("purple", 0.5)
@@ -635,7 +648,7 @@ ppiNetwork4substrates_OmniPath = function(limma_output, PTMsubstrates4PTMSEAanal
       filter(Phosphosite%in%PTMsubstrates4PTMSEAanalysis)
   limma_output$uniprotID = limma_output$Phosphosite %>% sub(":.*", "", .)
   limma_output$PhosLocation = limma_output$Phosphosite %>% sub(".*:", "", .)
-  limma_output = limma_output%>% dplyr::select(uniprotID, PhosLocation, PTM.FlankingRegion2, everything()) 
+  limma_output = limma_output%>% dplyr::select(uniprotID, PhosLocation, Phosphosite, everything()) 
   
   # get significant PTMsigDB terms
   sigIDs = 
@@ -657,56 +670,66 @@ ppiNetwork4substrates_OmniPath = function(limma_output, PTMsubstrates4PTMSEAanal
                          Regulation=ptmsigdb2$Regulation)  
   
   # Load omniPath database
-  omniPath_db = read.table(omniPath_db_file, sep="\t", header=T) %>%
-    filter(consensus_direction==1) # only keeop highly confident interactions
+  omniPath_db = lapply(omniPath_db_file, function(file) {
+    read.table(file, sep="\t", header=T) %>%
+    filter(is_directed==1) # only keeop highly confident interactions
+  }) %>% Reduce(rbind, .) %>% unique()
 
   # Get the omniPath subnetwork for the proteomics dataset
   omniPath_sub_proteomics = omniPath_db %>% 
     filter(source%in%proteomics|target%in%proteomics)
-
+  
   # On Mac and Windows, multisession runs tasks in separate R sessions (processes)
   future::plan("multisession", workers = 4) 
   future.apply::future_lapply(sigIDs, function(ID) {
     substrates = ptmsigdb3 %>% filter(Term==ID) %>% pull(Phosphosite)
     # Get the kinase substrates from PTMsigDB that are shared with the input dataset and the omniPath_sub_proteomics:
     shared_uniprotID = intersect(substrates, limma_output$Phosphosite) %>%
-      gsub(":.*", "", .) %>% intersect(., 
+      gsub(":.*", "", .) %>% unique() %>% intersect(.,
       omniPath_sub_proteomics%>%dplyr::select(source,target)%>%
       unlist()%>%unique()) # uniprot IDs
-  
-    if (length(shared_uniprotID)>0) {
-      # Get direct neighbors from the omniPath proteomics subnetwork for those shared substrates between PTMsigDB and limma output
-      neighbors = omniPath_sub_proteomics %>% 
-        filter(source%in%shared_uniprotID|target%in%shared_uniprotID) %>%
-        dplyr::select(source, target) %>% unlist() %>% unique()
-      # Get the omniPath proteomics subnetwork for the substrates, their direct neighbors, and the direct neighbors of the direct neighbors
-      interactions = omniPath_sub_proteomics %>% 
-        filter(source%in%neighbors|target%in%neighbors) %>%
-        dplyr::select(source,target,consensus_direction,consensus_stimulation,consensus_inhibition) %>% 
-        unique() %>% 
-        setNames(c("from","to","consensus_direction","consensus_stimulation","consensus_inhibition"))
     
+    if (length(shared_uniprotID)>0) {
+      print(ID)
+      # # Get direct neighbors from the omniPath proteomics subnetwork for those shared substrates between PTMsigDB and limma output
+      # neighbors = omniPath_sub_proteomics %>% 
+      #   filter(source%in%shared_uniprotID|target%in%shared_uniprotID) %>%
+      #   dplyr::select(source, target) %>% unlist() %>% unique()
+      # # Get the omniPath proteomics subnetwork for the substrates, their direct neighbors, and the direct neighbors of the direct neighbors
+      # interactions = omniPath_sub_proteomics %>% 
+      #   filter(source%in%neighbors|target%in%neighbors) %>%
+      interactions = omniPath_sub_proteomics %>% 
+        filter(source%in%shared_uniprotID|target%in%shared_uniprotID) %>%
+        unique() 
+      names(interactions)[1:2] = c("from","to")
       # Add in the network between PTMsigDB terms (e.g. kinases) and their members (e.g. substrates)
       kinase_substrate_ineractions = data.frame(from=rep(ID, length(shared_uniprotID)), 
                                                 to=shared_uniprotID,
+                                                source_genesymbol="NA",
+                                                target_genesymbol="NA",
+                                                is_directed="NA",
+                                                is_stimulation="NA",
+                                                is_inhibition="NA",
                                                 consensus_direction="NA", 
                                                 consensus_stimulation="NA",
                                                 consensus_inhibition="NA") %>%
-                                                unique(x)
-      interactions = rbind(kinase_substrate_ineractions, interactions)    
-      
+                                                unique()
+      interactions = rbind(kinase_substrate_ineractions, interactions) 
+      #print(head(interactions))
       # Define network edge colors
       edge.colors = rep("snow3", nrow(interactions))
+      # Set the colors for the edges that connect the kinase substrates to their proteomics immediate neighbors to orange.
+      edge.colors[interactions$is_directed==1]=
+        ifelse(interactions$is_stimulation==1,
+          scales::alpha("orange", 0.5),  
+            scales::alpha("darkturquoise",0.5))
       ## Set the colors of the edges that connect the kinase and it substrates to purple
       edge.colors[interactions$from%in%ID] = scales::alpha("purple", 0.5) 
-      # Set the colors for the edges that connect the kinase substrates to their proteomics immediate neighbors to orange.
-      edge.colors[interactions$consensus_direction==1]=
-        ifelse(interactions[interactions$consensus_direction==1,"consensus_stimulation"]==1,
-          scales::alpha("orange", 0.5), scales::alpha("darkturquoise",0.5))                                                             
 
       # Set the edge widths for the edges from or to the kinase substrates to 0.75, and all other edges to 0.1
-      edge.widths = rep(0.1, nrow(interactions))
-      edge.widths[interactions$from%in%shared_uniprotID|interactions$to%in%shared_uniprotID] = 0.75    
+      edge.widths = rep(0.85, nrow(interactions))
+      edge.widths[interactions$consensus_direction!=1] = 0.3
+      edge.widths[interactions$from==ID] = 0.75 
       
       # Create igraph object
       # library(igraph)
@@ -719,15 +742,16 @@ ppiNetwork4substrates_OmniPath = function(limma_output, PTMsubstrates4PTMSEAanal
       vertex.label.colors[igraph::V(ppi_network)$name%in%shared_uniprotID] = 
                   scales::alpha("black", 0.8)    
       # Set the vertex colors of the kinase substrates to orange:
-      vertex.colors = rep("snow3", length(igraph::V(ppi_network)$name))
+      vertex.colors = rep("snow3", nrow(interactions))
+      #****
       vertex.colors[igraph::V(ppi_network)$name%in%ID] = scales::alpha("purple", 0.5)
-
       vertex.colors[igraph::V(ppi_network)$name%in%shared_uniprotID] = scales::alpha("orange",0.5)   
       # Set the vertex sizes of the kinase substrates based on their effect*2, set the rest to 1, and set the kinase to 6. 
 
-      vertex.sizes = rep(1, length(igraph::V(ppi_network)$name))
+      vertex.sizes = rep(1, nrow(interactions))
       # vertex.sizes[igraph::V(ppi_network)$name%in%shared_uniprotID] =
       #     abs(round(as.numeric(effect))*2)
+      vertex.sizes[igraph::V(ppi_network)$name%in%shared_uniprotID] = 5
       vertex.sizes[igraph::V(ppi_network)$name %in%ID] = 10    
       coords = igraph::layout_in_circle(ppi_network)
 
@@ -746,21 +770,22 @@ ppiNetwork4substrates_OmniPath = function(limma_output, PTMsubstrates4PTMSEAanal
           vertex.color = vertex.colors,
           vertex.frame.color = "white", #vertex.colors,
           vertex.size = vertex.sizes,
-          edge.curved=0))
+          edge.curved=0,
+          edge.arrow.size = 0.5))
       dev.off()
-      print(plot(ppi_network,
-          vertex.shape="circle",
-          vertex.label.cex=0.7, 
-          vertex.label.color=vertex.label.colors,
-          edge.color = edge.colors,
-          vertex.label.dist = 0,   # distance outward,
-          edge.width=edge.widths,
-          layout = coords,
-          main=ID, asp = 0.7,
-          vertex.color = vertex.colors,
-          vertex.frame.color = "white", # vertex.colors,
-          vertex.size = vertex.sizes,
-          edge.curved=0))
+      # print(plot(ppi_network,
+      #     vertex.shape="circle",
+      #     vertex.label.cex=0.7, 
+      #     vertex.label.color=vertex.label.colors,
+      #     edge.color = edge.colors,
+      #     vertex.label.dist = 0,   # distance outward,
+      #     edge.width=edge.widths,
+      #     layout = coords,
+      #     main=ID, asp = 0.7,
+      #     vertex.color = vertex.colors,
+      #     vertex.frame.color = "white", # vertex.colors,
+      #     vertex.size = vertex.sizes,
+      #     edge.curved=0, edge.arrow.size = 0.5))
     }
   })
 }
