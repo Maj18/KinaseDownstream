@@ -537,9 +537,9 @@ ppiNetwork4substrates_STRING = function(limma_output, PTMsubstrates4PTMSEAanalys
       )  %>% left_join(
         data.frame(Phosphosite = names(mapping_regulation),
                    effect = stringr::str_split_fixed(mapping_regulation,";",2)%>%
-                      as.data.frame()%>%pull(V1),
+                      as.data.frame()%>%pull(V1) %>% as.numeric(),
                    sig.stat = stringr::str_split_fixed(mapping_regulation,";",2)%>%
-                      as.data.frame()%>%pull(V2),
+                      as.data.frame()%>%pull(V2) %>% as.numeric(),
                    stringsAsFactors = FALSE),
       )
     # mapping_TO_regualtion = setNames(interactions2$Regulation, interactions2$to)
@@ -560,7 +560,7 @@ ppiNetwork4substrates_STRING = function(limma_output, PTMsubstrates4PTMSEAanalys
     #col_gradients = colorRampPalette(c("orange", "purple"))(length(mapped_interest$STRING_id))
     # Set label color of the kinase to black, set the label colors of kinase substrate to dark grey, and set the rest as grey:
     vertex.label.colors = rep(scales::alpha("black", 0.5), length(igraph::V(ppi_network)$name))
-    vertex.label.colors[igraph::V(ppi_network)$name %in%ID] = scales::alpha("black", 1)
+    vertex.label.colors[igraph::V(ppi_network)$name%in%ID] = scales::alpha("black", 1)
     vertex.label.colors[igraph::V(ppi_network)$name%in%network_vertexIDs_4substrates] = 
                 scales::alpha("black", 0.8)    
     
