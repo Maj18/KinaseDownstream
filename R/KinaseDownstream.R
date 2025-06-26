@@ -497,7 +497,6 @@ ppiNetwork4substrates_STRING = function(limma_output, PTMsubstrates4PTMSEAanalys
       kinase_substrate_ineractions$to = 
         mapping_back_all_proteins_forKinaseSubstrates[kinase_substrate_ineractions$to] 
     }
-
     # Remove duplicated rows
     kinase_substrate_ineractions = unique(kinase_substrate_ineractions)  
     # Only keep interactions with both From and To being String IDs that are included in mapping_back_all_proteins (Map the STRING IDs of all substrates and their immediate neighbors back to gene names/uniprot IDs)
@@ -567,31 +566,31 @@ ppiNetwork4substrates_STRING = function(limma_output, PTMsubstrates4PTMSEAanalys
     # Set the vertex colors of the kinase substrates based on the effect of the kinase substrates: orange: up-regulated, darkturquoise: down-regulated
     mapping_TO_effect = setNames(interactions2$effect, interactions2$to)
     # There are effects (logFC/t, for sites) share the same name (Uniprot+Gene), we will take the mean of those effects., 
-    mapping_TO_effect = tapply(mapping_TO_effect, names(mapping_TO_effect), mean)
+    mapping_TO_effect = tapply(mapping_TO_effect, names(mapping_TO_effect), max)
     mapping_TO_effect = na.omit(mapping_TO_effect) %>% .[!is.na(names(.))]
     # Here effect could be logFC or the t statistics from Limma analysis
     effect = mapping_TO_effect[igraph::V(ppi_network)$name %>% 
                                  .[.%in%network_vertexIDs_4substrates]]
     mapping_TO_sigStat = setNames(interactions2$sig.stat, interactions2$to) %>%
-      tapply(., names(.), mean)
+      tapply(., names(.), min)
     mmapping_TO_sigStat = na.omit(mapping_TO_sigStat) %>% .[!is.na(names(.))]
     sig.stat = mapping_TO_sigStat[igraph::V(ppi_network)$name %>% 
                                  .[.%in%network_vertexIDs_4substrates]]
-
-    # Add signifcance info
-    igraph::V(ppi_network)$name[igraph::V(ppi_network)$name%in%network_vertexIDs_4substrates][(abs(effect)>logFCcutoff4limma)&(sig.stat<significance_cutoff4limma)] =
-       paste0(igraph::V(ppi_network)$name[igraph::V(ppi_network)$name%in%network_vertexIDs_4substrates][(abs(effect)>logFCcutoff4limma)&(sig.stat<significance_cutoff4limma)], "*")
 
     vertex.colors = rep("snow3", length(igraph::V(ppi_network)$name))
     vertex.colors[igraph::V(ppi_network)$name %in%ID] = scales::alpha("purple", 0.5)
     vertex.colors[igraph::V(ppi_network)$name%in%network_vertexIDs_4substrates] =
         ifelse(effect<0, scales::alpha("darkturquoise",0.5), scales::alpha("orange",0.5))    
-    # Set the vertex sizes of the kinase substrates based on their effect*2, set the rest to 1, and set the kinase to 6. 
+    # Set the vertex sizes of the kinase substrates based on their effect*4, set the rest to 1, and set the kinase to 6. 
     vertex.sizes = rep(1, length(igraph::V(ppi_network)$name))
     vertex.sizes[igraph::V(ppi_network)$name%in%network_vertexIDs_4substrates] =
-        abs(round(as.numeric(effect))*2)
+        abs(round(as.numeric(effect))*4)
     vertex.sizes[igraph::V(ppi_network)$name %in%ID] = 10    
     coords = igraph::layout_in_circle(ppi_network)
+
+    # Add signifcance info
+    igraph::V(ppi_network)$name[igraph::V(ppi_network)$name%in%network_vertexIDs_4substrates][(abs(effect)>logFCcutoff4limma)&(sig.stat<significance_cutoff4limma)] =
+       paste0(igraph::V(ppi_network)$name[igraph::V(ppi_network)$name%in%network_vertexIDs_4substrates][(abs(effect)>logFCcutoff4limma)&(sig.stat<significance_cutoff4limma)], "*")
 
     L = length(igraph::V(ppi_network))/60
     ID2 = sub("/", "_", ID)
