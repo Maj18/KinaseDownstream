@@ -579,8 +579,6 @@ ppiNetwork4substrates_STRING = function(limma_output, PTMsubstrates4PTMSEAanalys
                                  .[.%in%network_vertexIDs_4substrates]]
 
     # Add signifcance info
-    igraph::V(ppi_network)$name[igraph::V(ppi_network)$name%in%network_vertexIDs_4substrates][]
-    
     igraph::V(ppi_network)$name[igraph::V(ppi_network)$name%in%network_vertexIDs_4substrates][abs(effect)>logFCcutoff4limma)&(sig.stat<significance_cutoff4limma)] =
        paste0(igraph::V(ppi_network)$name[igraph::V(ppi_network)$name%in%network_vertexIDs_4substrates][abs(effect)>logFCcutoff4limma)&(sig.stat<significance_cutoff4limma)], "*")
 
