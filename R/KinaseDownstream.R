@@ -239,9 +239,11 @@ processLimmaResult = function(limma_rslt, PTMsubstrates4PTMSEAanalysis,
 #' @param output_file_suffix a suffix for the output file names, default is empty string. If you want to add FlankingRegion to the plot, set output_file_suffix = "wPhosphosites", otherwise set it to "".
 #' @import igraph
 #' @import dplyr
-KinaseNetwork4substrates = function(pair, PTMsubstrates4PTMSEAanalysis, limma_output, PTMSEA_output, significance_cutoff=1, 
-                                 significance_statistic="fdr.pvalue", mapping_ID, PTMSEA_OUTDIR,
-                                 mapping_regulation, output_file_suffix="", PTMsigDB_collection_file) {
+KinaseNetwork4substrates = function(pair, PTMsubstrates4PTMSEAanalysis, limma_output, PTMSEA_output, 
+                                significance_cutoff4PTMSEA=1, 
+                                significance_statistic4PTMSEA="fdr.pvalue", mapping_ID,
+                                significance_cutoff4limma=0.05, logFCcutoff4limma=0.5, PTMSEA_OUTDIR,
+                                mapping_regulation, output_file_suffix="", PTMsigDB_collection_file) {
   limma_output$PTM.FlankingRegion2 = paste0(limma_output$PTM.FlankingRegion, "-p")
   limma_output = limma_output %>%
       filter(Phosphosite%in%PTMsubstrates4PTMSEAanalysis)
@@ -274,6 +276,21 @@ KinaseNetwork4substrates = function(pair, PTMsubstrates4PTMSEAanalysis, limma_ou
     igraph::V(g)$label = c(igraph::V(g)[[1]]$name,   #sub(".*_", "", V(g)[[1]]$name), 
                    mapping_ID[igraph::V(g)[2:length(igraph::V(g))]$name] %>% as.character())   
     mapping_regulation = mapping_regulation[shared] 
+
+    mapping_all = edge%>%mutate(FlankingRegion=To) %>% 
+      left_join(data.frame(FlankingRegion=names(mapping_ID),Name=as.character(mapping_ID))) %>% 
+      left_join(data.frame(
+        FlankingRegion=names(mapping_regulation), 
+        effect = stringr::str_split_fixed(mapping_regulation,";",2)%>%
+            as.data.frame()%>%pull(V1) %>% as.numeric(), 
+        significance = stringr::str_split_fixed(mapping_regulation,";",2)%>%
+            as.data.frame()%>%pull(V2) %>% as.numeric())) %>%
+        tibble::column_to_rownames(var="Name")
+    regulation_effect = abs(round(c(6,mapping_all[igraph::V(g)$label[-1],"effect"])))
+    regulation_significance = (mapping_all[igraph::V(g)$label[-1],"significance"]<significance_cutoff4limma)&
+                              (abs(mapping_all[igraph::V(g)$label[-1],"effect"])>logFCcutoff4limma)
+    igraph::V(g)$label[-1][regulation_significance] = paste0(igraph::V(g)$label[-1][regulation_significance], "*")
+
     igraph::E(g)$color = ifelse(regulation=="u", scales::alpha("orange",0.25), scales::alpha("darkturquoise",0.25))
     igraph::V(g)$color = c(scales::alpha("black", 0.25), ifelse(mapping_regulation<0, 
                                                 scales::alpha("darkturquoise",0.5), scales::alpha("orange",0.5)))
@@ -292,6 +309,7 @@ KinaseNetwork4substrates = function(pair, PTMsubstrates4PTMSEAanalysis, limma_ou
       pdf(paste0(PTMSEA_OUTDIR, "/Network/kinase_substrates/", pair,"/", ID2, suffix, ".pdf"),
                h=(L/4)+2.5, w=(L/4)+2.8)
     }
+
     print(plot(g, vertex.label.dist = 0, 
                layout = layout, 
                # vertex.label.degree = pi/2, 
@@ -300,7 +318,7 @@ KinaseNetwork4substrates = function(pair, PTMsubstrates4PTMSEAanalysis, limma_ou
                vertex.color = igraph::V(g)$color,
                vertex.frame.color = igraph::V(g)$color,
                # vertex size = logFC*4
-               vertex.size = abs(round(c(6,as.numeric(mapping_regulation*4)))), 
+               vertex.size = regulation_effect*4, 
                vertex.label.color = "black",
                edge.color = igraph::E(g)$color))
     dev.off()
@@ -312,7 +330,7 @@ KinaseNetwork4substrates = function(pair, PTMsubstrates4PTMSEAanalysis, limma_ou
                vertex.color = igraph::V(g)$color,
                vertex.frame.color = igraph::V(g)$color,
                # vertex size = logFC*4
-               vertex.size = abs(round(c(6,as.numeric(mapping_regulation*4)))),
+               vertex.size = regulation_effect*4,
                vertex.label.color = "black",
                edge.color = igraph::E(g)$color))
   })
@@ -335,8 +353,8 @@ KinaseNetwork4substrates = function(pair, PTMsubstrates4PTMSEAanalysis, limma_ou
 #' 
 ppiNetwork4substrates_STRING = function(limma_output, PTMsubstrates4PTMSEAanalysis, PTMSEA_output,       
                                  PTMSEA_OUTDIR, significance_cutoff4PTMSEA=1, 
-                                 significance_cutoff4limma=0.05, logFCcutoff4limma=0.5, 
                                  significance_statistic4PTMSEA="fdr.pvalue", mapping_ID,
+                                 significance_cutoff4limma=0.05, logFCcutoff4limma=0.5, 
                                  mapping_regulation, proteomics, outdir_ppi,
                                  PTMsigDB_collection_file,
                                  uniprot_provided=T) {
