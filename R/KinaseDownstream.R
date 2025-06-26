@@ -568,11 +568,13 @@ ppiNetwork4substrates_STRING = function(limma_output, PTMsubstrates4PTMSEAanalys
     mapping_TO_effect = setNames(interactions2$effect, interactions2$to)
     # There are effects (logFC/t, for sites) share the same name (Uniprot+Gene), we will take the mean of those effects., 
     mapping_TO_effect = tapply(mapping_TO_effect, names(mapping_TO_effect), mean)
+    mapping_TO_effect = na.omit(mapping_TO_effect) %>% .[!is.na(names(.))]
     # Here effect could be logFC or the t statistics from Limma analysis
     effect = mapping_TO_effect[igraph::V(ppi_network)$name %>% 
                                  .[.%in%network_vertexIDs_4substrates]]
     mapping_TO_sigStat = setNames(interactions2$sig.stat, interactions2$to) %>%
       tapply(., names(.), mean)
+    mmapping_TO_sigStat = na.omit(mapping_TO_sigStat) %>% .[!is.na(names(.))]
     sig.stat = mapping_TO_sigStat[igraph::V(ppi_network)$name %>% 
                                  .[.%in%network_vertexIDs_4substrates]]
 
