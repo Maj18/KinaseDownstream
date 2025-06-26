@@ -694,6 +694,10 @@ ppiNetwork4substrates_OmniPath = function(limma_output, PTMsubstrates4PTMSEAanal
     read.table(file, sep="\t", header=T) %>%
     filter(is_directed==1) # only keeop highly confident interactions
   }) %>% Reduce(rbind, .) %>% unique()
+  #  Expand interactions involving complexes into interactions between all component proteins and the other partner
+  omniPath_db$source = gsub("COMPLEX:","",omniPath_db$source) %>%
+          stringr::str_split(., "_") 
+  omniPath_db = omniPath_db %>% tidyr::unnest_longer(source)
 
   # Get the omniPath subnetwork for the proteomics dataset
   omniPath_sub_proteomics = omniPath_db %>% 
