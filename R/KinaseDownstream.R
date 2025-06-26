@@ -744,7 +744,7 @@ ppiNetwork4substrates_OmniPath = function(limma_output, PTMsubstrates4PTMSEAanal
       edge.colors = rep("snow3", nrow(interactions))
       # Set the colors for the edges that connect the kinase substrates to their proteomics immediate neighbors to orange.
       edge.colors[interactions$is_directed==1]=
-        ifelse(interactions$is_stimulation==1,
+        ifelse(interactions[interactions$is_directed==1,]$is_stimulation==1,
           scales::alpha("orange", 0.5),  
             scales::alpha("darkturquoise",0.5))
       ## Set the colors of the edges that connect the kinase and it substrates to purple
@@ -761,20 +761,21 @@ ppiNetwork4substrates_OmniPath = function(limma_output, PTMsubstrates4PTMSEAanal
 
       #col_gradients = colorRampPalette(c("orange", "purple"))(length(mapped_interest$STRING_id))
       # Set label color of the kinase to black, set the label colors of kinase substrate to dark grey, and set the rest as grey:
-      vertex.label.colors = rep(scales::alpha("black", 0.5), length(igraph::V(ppi_network)$name))
+      vertex.label.colors = rep(scales::alpha("black", 0.5), length(igraph::V(ppi_network)))
       vertex.label.colors[igraph::V(ppi_network)$name %in%ID] = scales::alpha("black", 1)
       vertex.label.colors[igraph::V(ppi_network)$name%in%shared_uniprotID] = 
                   scales::alpha("black", 0.8)    
       # Set the vertex colors of the kinase substrates to orange:
-      vertex.colors = rep("snow3", length(igraph::V(ppi_network)$name))
+      vertex.colors = rep(scales::alpha("snow3", 0.25), length(igraph::V(ppi_network)))
       #****
       vertex.colors[igraph::V(ppi_network)$name%in%ID] = scales::alpha("purple", 0.5)
-      vertex.colors[igraph::V(ppi_network)$name%in%shared_uniprotID] = scales::alpha("orange",0.3)   
+      vertex.colors[igraph::V(ppi_network)$name%in%shared_uniprotID] = scales::alpha("orange",0.5)   
       # Set the vertex sizes of the kinase substrates based on their effect*2, set the rest to 1, and set the kinase to 6. 
 
-      vertex.sizes = rep(7, length(igraph::V(ppi_network)$name))
+      vertex.sizes = rep(7, length(igraph::V(ppi_network)))
       # vertex.sizes[igraph::V(ppi_network)$name%in%shared_uniprotID] =
       #     abs(round(as.numeric(effect))*2)
+      print(shared_uniprotID)
       vertex.sizes[igraph::V(ppi_network)$name%in%shared_uniprotID] = 7
       vertex.sizes[igraph::V(ppi_network)$name %in%ID] = 10    
       coords = igraph::layout_in_circle(ppi_network)
