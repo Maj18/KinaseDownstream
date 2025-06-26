@@ -579,8 +579,8 @@ ppiNetwork4substrates_STRING = function(limma_output, PTMsubstrates4PTMSEAanalys
                                  .[.%in%network_vertexIDs_4substrates]]
 
     # Add signifcance info
-    igraph::V(ppi_network)$name[igraph::V(ppi_network)$name%in%network_vertexIDs_4substrates][abs(effect)>logFCcutoff4limma)&(sig.stat<significance_cutoff4limma)] =
-       paste0(igraph::V(ppi_network)$name[igraph::V(ppi_network)$name%in%network_vertexIDs_4substrates][abs(effect)>logFCcutoff4limma)&(sig.stat<significance_cutoff4limma)], "*")
+    igraph::V(ppi_network)$name[igraph::V(ppi_network)$name%in%network_vertexIDs_4substrates][(abs(effect)>logFCcutoff4limma)&(sig.stat<significance_cutoff4limma)] =
+       paste0(igraph::V(ppi_network)$name[igraph::V(ppi_network)$name%in%network_vertexIDs_4substrates][(abs(effect)>logFCcutoff4limma)&(sig.stat<significance_cutoff4limma)], "*")
 
     vertex.colors = rep("snow3", length(igraph::V(ppi_network)$name))
     vertex.colors[igraph::V(ppi_network)$name %in%ID] = scales::alpha("purple", 0.5)
