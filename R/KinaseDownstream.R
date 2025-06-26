@@ -769,13 +769,13 @@ ppiNetwork4substrates_OmniPath = function(limma_output, PTMsubstrates4PTMSEAanal
       vertex.colors = rep("snow3", length(igraph::V(ppi_network)$name))
       #****
       vertex.colors[igraph::V(ppi_network)$name%in%ID] = scales::alpha("purple", 0.5)
-      vertex.colors[igraph::V(ppi_network)$name%in%shared_uniprotID] = scales::alpha("orange",0.5)   
+      vertex.colors[igraph::V(ppi_network)$name%in%shared_uniprotID] = scales::alpha("orange",0.3)   
       # Set the vertex sizes of the kinase substrates based on their effect*2, set the rest to 1, and set the kinase to 6. 
 
-      vertex.sizes = rep(1, length(igraph::V(ppi_network)$name))
+      vertex.sizes = rep(7, length(igraph::V(ppi_network)$name))
       # vertex.sizes[igraph::V(ppi_network)$name%in%shared_uniprotID] =
       #     abs(round(as.numeric(effect))*2)
-      vertex.sizes[igraph::V(ppi_network)$name%in%shared_uniprotID] = 5
+      vertex.sizes[igraph::V(ppi_network)$name%in%shared_uniprotID] = 7
       vertex.sizes[igraph::V(ppi_network)$name %in%ID] = 10    
       coords = igraph::layout_in_circle(ppi_network)
 
