@@ -697,7 +697,7 @@ ppiNetwork4substrates_OmniPath = function(limma_output, PTMsubstrates4PTMSEAanal
   #  Expand interactions involving complexes into interactions between all component proteins and the other partner
   omniPath_db$source = gsub("COMPLEX:","",omniPath_db$source) %>%
           stringr::str_split(., "_") 
-  omniPath_db = omniPath_db %>% tidyr::unnest_longer(source)
+  omniPath_db = omniPath_db %>% tidyr::unnest_longer(source) %>% unique()
 
   # Get the omniPath subnetwork for the proteomics dataset
   omniPath_sub_proteomics = omniPath_db %>% 
@@ -769,7 +769,7 @@ ppiNetwork4substrates_OmniPath = function(limma_output, PTMsubstrates4PTMSEAanal
       vertex.colors = rep(scales::alpha("snow3", 0.25), length(igraph::V(ppi_network)))
       #****
       vertex.colors[igraph::V(ppi_network)$name%in%ID] = scales::alpha("purple", 0.5)
-      vertex.colors[igraph::V(ppi_network)$name%in%shared_uniprotID] = scales::alpha("orange",0.5)   
+      vertex.colors[igraph::V(ppi_network)$name%in%shared_uniprotID] = scales::alpha("orange",0.65)   
       # Set the vertex sizes of the kinase substrates based on their effect*2, set the rest to 1, and set the kinase to 6. 
 
       vertex.sizes = rep(7, length(igraph::V(ppi_network)))
