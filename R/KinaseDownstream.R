@@ -1,7 +1,106 @@
+
+#' Run PTM-SEA on the limma results logFC
+#' @import dplyr
+#' @param species This can be "human", "mouse" or "rat"
+#' @param inputtype This can be "flanking", "sitegrpid", or "uniprot"
+#' @param sample.norm.type Recommend "none" for logFC, and "rank" for gene expression data
+#' @param weight This will decide how much the top ranked feature been emphasized, the bigger the value is, the more weight the top features will get, recommend 0.75 for PTM data
+#' @param correl.type Recommend "rank", more robust
+#' @param statistic Recommend "area.under.RES" for PTM data
+#' 
+runPTMSEA2 = function(limma_rslt, PTMSEA_OUTDIR, species="human", 
+  inputtype="flanking", sample.norm.type = "none", 
+  weight = 0.75, correl.type = "rank", statistic = "area.under.RES", spare.cores = 4,
+  output.score.type = "NES", nperm = 1000, min.overlap = 5, extended.output = TRUE,
+  global.fdr = FALSE, export.signat.gct = T, param.file=T) {
+  limma_rslt_4gct = lapply(seq_along(limma_rslt), function(i){
+    rslt = limma_rslt[[i]] %>% arrange(-logFC)
+    rownames(rslt) = NULL
+    temp = rslt[, c("PTM.FlankingRegion", "logFC")]
+    colnames(temp) = c("PTM.FlankingRegion", names(limma_rslt)[i])
+    temp$PTM.FlankingRegion = paste0(temp$PTM.FlankingRegion, "-p")
+    temp
+  }) %>% Reduce(full_join, .) %>%
+    .[!duplicated(.$PTM.FlankingRegion), ] 
+  rownames(limma_rslt_4gct) = NULL
+  limma_rslt_4gct = 
+    tibble::column_to_rownames(limma_rslt_4gct, var="PTM.FlankingRegion")
+  cmapR::write_gct(as.matrix(limma_rslt_4gct)%>%
+    cmapR::GCT(.),
+  #cmapR::new("GCT",mat=.), 
+    paste0(PTMSEA_OUTDIR ,"/PTM-SEA"), precision=2)
+  # run PTM-SEA
+  input_gct_file = list.files(path=PTMSEA_OUTDIR, pattern = "PTM-SEA", full.names = TRUE)
+
+  # set up the PTMsigDB file:
+  if (species=="human") {
+    if (inputtype=="flanking") {
+      gmt_file = system.file("extdata", "ptm.sig.db.all.flanking.human.v2.0.0.gmt", 
+        package="KinaseDownstream")
+    } else if (inputtype=="sitegrpid") {
+      gmt_file = system.file("extdata", "ptm.sig.db.all.sitegrpid.human.v2.0.0.gmt", 
+        package="KinaseDownstream")
+    } else if (inputtype=="uniprot") {
+      gmt_file = system.file("extdata", "ptm.sig.db.all.uniprot.human.v2.0.0.gmt", 
+        package="KinaseDownstream")
+    }
+  } else if (species=="mouse") {
+    if (inputtype=="flanking") {
+      gmt_file = system.file("extdata", "ptm.sig.db.all.flanking.mouse.v2.0.0.gmt", 
+        package="KinaseDownstream")
+    } else if (inputtype=="sitegrpid") {
+      gmt_file = system.file("extdata", "ptm.sig.db.all.sitegrpid.mouse.v2.0.0.gmt", 
+        package="KinaseDownstream")
+    } else if (inputtype=="uniprot") {
+      gmt_file = system.file("extdata", "ptm.sig.db.all.uniprot.mouse.v2.0.0.gmt", 
+        package="KinaseDownstream")
+    }    
+  } else if (species=="rat") {
+    if (inputtype=="flanking") {
+      gmt_file = system.file("extdata", "ptm.sig.db.all.flanking.rat.v2.0.0.gmt", 
+        package="KinaseDownstream")
+    } else if (inputtype=="sitegrpid") {
+      gmt_file = system.file("extdata", "ptm.sig.db.all.sitegrpid.rat.v2.0.0.gmt", 
+        package="KinaseDownstream")
+    } else if (inputtype=="uniprot") {
+      gmt_file = system.file("extdata", "ptm.sig.db.all.uniprot.rat.v2.0.0.gmt", 
+        package="KinaseDownstream")
+    }    
+  }
+  
+  set.seed(123)
+  invisible(capture.output(ssGSEA2::run_ssGSEA2(input_gct_file,
+        output.prefix = "PTMSEA_OUTPUT",
+        gene.set.databases = gmt_file,
+        output.directory = PTMSEA_OUTDIR,
+        sample.norm.type = sample.norm.type,
+        weight = weight, 
+        correl.type = correl.type, 
+        statistic = statistic,
+        spare.cores = spare.cores,
+        output.score.type = output.score.type, 
+        nperm = nperm, 
+        min.overlap = min.overlap, 
+        extended.output = extended.output, 
+        global.fdr = global.fdr,
+        export.signat.gct = export.signat.gct ,
+        param.file = param.file,
+        log.file = paste0(PTMSEA_OUTDIR, "/run.log")))) 
+                    
+  return(limma_rslt_4gct)
+}
+
+
+
+
+
 #' Run PTM-SEA on the limma results
 #' @import dplyr
 #' 
-runPTMSEA = function(limma_rslt, PTMSEA_OUTDIR) {
+runPTMSEA = function(limma_rslt, PTMSEA_OUTDIR, sample.norm.type = "none", 
+  weight = 1, correl.type = "rank", statistic = "area.under.RES", spare.cores = 4,
+  output.score.type = "NES", nperm = 1000, min.overlap = 5, extended.output = TRUE,
+  global.fdr = FALSE, export.signat.gct = T, param.file=T) {
   limma_rslt_4gct = lapply(seq_along(limma_rslt), function(i){
     rslt = limma_rslt[[i]] %>% arrange(-logFC)
     rownames(rslt) = NULL
@@ -22,26 +121,44 @@ runPTMSEA = function(limma_rslt, PTMSEA_OUTDIR) {
   input_gct_file = list.files(path=PTMSEA_OUTDIR, pattern = "PTM-SEA", full.names = TRUE)
 
   # # Download gene set database 
+  # Download mouse 
   download.file(url = "https://raw.githubusercontent.com/nicolerg/ssGSEA2/refs/heads/master/db/ptmsigdb/ptm.sig.db.all.flanking.human.v2.0.0.gmt",
                 destfile = paste0(PTMSEA_OUTDIR, "/ptm.sig.db.all.flanking.human.v2.0.0.gmt"))
   set.seed(123)
   invisible(capture.output(ssGSEA2::run_ssGSEA2(input_gct_file,
-                    output.prefix = "PTMSEA_OUTPUT",
-                    gene.set.databases = paste0(PTMSEA_OUTDIR, "/ptm.sig.db.all.flanking.human.v2.0.0.gmt"),
-                    output.directory = PTMSEA_OUTDIR,
-                    sample.norm.type = "none", #uses actual expression values
-                    weight = 1, 
-                    correl.type = "rank", #genes are weighted by actual values 
-                    statistic = "area.under.RES",
-                    spare.cores = 4,
-                    output.score.type = "NES", 
-                    nperm = 1000, 
-                    min.overlap = 5, 
-                    extended.output = TRUE, 
-                    global.fdr = FALSE,
-                    export.signat.gct = T,
-                    param.file=T,
-                    log.file = paste0(PTMSEA_OUTDIR, "/run.log")))) 
+        output.prefix = "PTMSEA_OUTPUT",
+        gene.set.databases = paste0(PTMSEA_OUTDIR, "/ptm.sig.db.all.flanking.human.v2.0.0.gmt"),
+        output.directory = PTMSEA_OUTDIR,
+        sample.norm.type = sample.norm.type,
+        weight = weight, 
+        correl.type = correl.type, 
+        statistic = statistic,
+        spare.cores = spare.cores,
+        output.score.type = output.score.type, 
+        nperm = nperm, 
+        min.overlap = min.overlap, 
+        extended.output = extended.output, 
+        global.fdr = global.fdr,
+        export.signat.gct = export.signat.gct ,
+        param.file = param.file,
+        log.file = paste0(PTMSEA_OUTDIR, "/run.log")))) 
+  # invisible(capture.output(ssGSEA2::run_ssGSEA2(input_gct_file,
+  #                   output.prefix = "PTMSEA_OUTPUT",
+  #                   gene.set.databases = paste0(PTMSEA_OUTDIR, "/ptm.sig.db.all.flanking.human.v2.0.0.gmt"),
+  #                   output.directory = PTMSEA_OUTDIR,
+  #                   sample.norm.type = "none", #uses actual expression values
+  #                   weight = 1, 
+  #                   correl.type = "rank", #genes are weighted by actual values 
+  #                   statistic = "area.under.RES",
+  #                   spare.cores = 4,
+  #                   output.score.type = "NES", 
+  #                   nperm = 1000, 
+  #                   min.overlap = 5, 
+  #                   extended.output = TRUE, 
+  #                   global.fdr = FALSE,
+  #                   export.signat.gct = T,
+  #                   param.file=T,
+  #                   log.file = paste0(PTMSEA_OUTDIR, "/run.log")))) 
                     
   return(limma_rslt_4gct)
 }
