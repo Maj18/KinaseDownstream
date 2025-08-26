@@ -102,6 +102,15 @@ getPTMsubstrates4PTMSEAanalysis = function(limma_rslt) {
   limma_rslt_4gct$Phosphosite
 }
 
+getPTMsubstrates4PTMSEAanalysis_uniprot = function(limma_rslt) {
+  limma_rslt_4gct = lapply(seq_along(limma_rslt), function(i){
+    rslt = limma_rslt[[i]] %>% arrange(-logFC)
+    rslt
+  }) %>% Reduce(full_join, .) %>%
+    .[!duplicated(.$Feature), ] 
+  limma_rslt_4gct$Feature
+}
+
 
 
 #' Prepare the PTM-SEA results
@@ -255,11 +264,13 @@ processLimmaResult = function(limma_rslt, PTMsubstrates4PTMSEAanalysis,
     rslt$PhosLocation = rslt$Phosphosite %>% sub(".*:", "", .)
     rslt = filter(rslt, Phosphosite%in%PTMsubstrates4PTMSEAanalysis)
     mapUniprotPhosLocation2FlankingRegion2 = 
-      setNames(paste0(rslt$uniprotID,"\n",rslt$PhosLocation), rslt$PTM.FlankingRegion2)
+      setNames(paste0(rslt$uniprotID,"\n",rslt$PhosLocation),rslt$PTM.FlankingRegion2)
     mapUniprotPhosLocationFlankingRegion2FlankingRegion2 = 
       setNames(paste0(rslt$uniprotID,"\n",rslt$PhosLocation,
                     "\n",rslt$PTM.FlankingRegion), rslt$PTM.FlankingRegion2)
-    mapLogFC2FlankingRegion2 = setNames(paste0(rslt$logFC,";",rslt[,significance_statistic,drop=T]), rslt$PTM.FlankingRegion2) 
+    mapLogFC2FlankingRegion2 = 
+    	setNames(paste0(rslt$logFC,";",rslt[,significance_statistic,drop=T]), 
+    		rslt$PTM.FlankingRegion2) 
     list(mapUniprotPhosLocation2FlankingRegion2 = 
             mapUniprotPhosLocation2FlankingRegion2,
          mapUniprotPhosLocationFlankingRegion2FlankingRegion2 = 
@@ -272,6 +283,111 @@ processLimmaResult = function(limma_rslt, PTMsubstrates4PTMSEAanalysis,
 
 
 
+
+#' @param significance_statistic this can be "pvalue" or "fdr.pvalue".
+#' @param mapping_ID a named character vector mapping phosphosite FlankingRegion to uniprot ID/PhosLocation/FlankingRegion
+#' @param PTMSEA_OUTDIR output directory for PTMSEA results
+#' @param mapping_regulation a named numeric vector mapping phosphosite to regulation (usually logFC or t-statistics)
+#' @param PTMsigDB_collection_file the path to the PTMsigDB collection file in GMT format
+#' @param output_file_suffix a suffix for the output file names, default is empty string. If you want to add FlankingRegion to the plot, set output_file_suffix = "wPhosphosites", otherwise set it to "".
+#' @import igraph
+#' @import dplyr
+KinaseNetwork4substrates_uniprot = function(pair, PTMsubstrates4PTMSEAanalysis, limma_output, PTMSEA_output, 
+                                significance_cutoff4PTMSEA=1, 
+                                significance_statistic4PTMSEA="fdr.pvalue", mapping_ID,
+                                significance_cutoff4limma=0.05, logFCcutoff4limma=0.5, PTMSEA_OUTDIR,
+                                mapping_regulation, output_file_suffix="", PTMsigDB_collection_file) {
+  limma_output$Feature = paste0(limma_output$Feature, "-p")
+  limma_output = limma_output %>%
+      filter(Feature %in% PTMsubstrates4PTMSEAanalysis)
+  limma_output$uniprotID = limma_output$Phosphosite %>% sub(":.*", "", .)
+  limma_output$PhosLocation = limma_output$Phosphosite %>% sub(".*:", "", .)
+  limma_output = limma_output%>% dplyr::select(uniprotID, PhosLocation, PTM.FlankingRegion2, everything()) 
+  # get significant PTMsigDB terms
+  sigIDs = PTMSEA_output[PTMSEA_output[,significance_statistic,drop=T]<significance_cutoff, ] %>% 
+    pull(id) %>% .[!is.na(.)] 
+
+  # import PTMsigDB.v2 collection
+  ptmsigdb = GSEABase::getGmt(PTMsigDB_collection_file)
+  ptmsigdb0 = lapply(ptmsigdb, function(K) {
+    data.frame(Term=K@setName, Phosphosite=K@geneIds)
+  }) %>% Reduce(rbind, .)
+  ptmsigdb2 = as.data.frame(stringr::str_split_fixed(ptmsigdb0$Phosphosite,";",2)) %>%
+    setNames(c("Phosphosite", "Regulation"))
+  ptmsigdb3 = data.frame(Term=ptmsigdb0$Term,
+                               Phosphosite=ptmsigdb2$Phosphosite,
+                               Regulation=ptmsigdb2$Regulation)  
+  lapply(sigIDs, function(ID) {
+    # print(ID)
+    substrates = ptmsigdb3 %>% filter(Term==ID) %>% pull(Phosphosite)
+    shared = intersect(substrates, limma_output$PTM.FlankingRegion2) # flanking regions
+    regulation = ptmsigdb3 %>% filter(Term==ID) %>% 
+      filter(Phosphosite%in%shared) %>% pull(Regulation)
+    edge = data.frame(From=rep(ID, length(shared)), To=shared)    
+    # library(igraph)
+    g = igraph::graph_from_data_frame(d = edge, directed = FALSE)
+    igraph::V(g)$label = c(igraph::V(g)[[1]]$name,   #sub(".*_", "", V(g)[[1]]$name), 
+                   mapping_ID[igraph::V(g)[2:length(igraph::V(g))]$name] %>% as.character())   
+    mapping_regulation = mapping_regulation[shared] 
+
+    mapping_all = edge%>%mutate(FlankingRegion=To) %>% 
+      left_join(data.frame(FlankingRegion=names(mapping_ID),Name=as.character(mapping_ID))) %>% 
+      left_join(data.frame(
+        FlankingRegion=names(mapping_regulation), 
+        effect = stringr::str_split_fixed(mapping_regulation,";",2)%>%
+            as.data.frame()%>%pull(V1) %>% as.numeric(), 
+        significance = stringr::str_split_fixed(mapping_regulation,";",2)%>%
+            as.data.frame()%>%pull(V2) %>% as.numeric())) %>%
+        tibble::column_to_rownames(var="Name")
+    regulation_effect = abs(round(c(6,mapping_all[igraph::V(g)$label[-1],"effect"])))
+    regulation_significance = (mapping_all[igraph::V(g)$label[-1],"significance"]<significance_cutoff4limma)&
+                              (abs(mapping_all[igraph::V(g)$label[-1],"effect"])>logFCcutoff4limma)
+    igraph::V(g)$label[-1][regulation_significance] = paste0(igraph::V(g)$label[-1][regulation_significance], "*")
+
+    igraph::E(g)$color = ifelse(regulation=="u", scales::alpha("orange",0.25), scales::alpha("darkturquoise",0.25))
+    igraph::V(g)$color = c(scales::alpha("black", 0.25), ifelse(mapping_regulation<0, 
+                                                scales::alpha("darkturquoise",0.5), scales::alpha("orange",0.5)))
+    layout = igraph::layout_with_fr(g)
+    # layout = layout_in_circle(g)
+    dir.create(paste0(PTMSEA_OUTDIR, "/Network/kinase_substrates/", pair,"/"), 
+               showWarnings = FALSE, recursive = TRUE)
+    L = length(igraph::V(g))
+    ID2 = gsub("/", "_", ID)
+    if (output_file_suffix!="") {
+      suffix = paste0("_", output_file_suffix)
+      pdf(paste0(PTMSEA_OUTDIR, "/Network/kinase_substrates/", pair,"/", ID2, suffix, ".pdf"),
+               h=(L/2.5)+3, w=(L/2.5)+3)
+    } else {
+      suffix = ""
+      pdf(paste0(PTMSEA_OUTDIR, "/Network/kinase_substrates/", pair,"/", ID2, suffix, ".pdf"),
+               h=(L/4)+2.5, w=(L/4)+2.8)
+    }
+
+    print(plot(g, vertex.label.dist = 0, 
+               layout = layout, 
+               # vertex.label.degree = pi/2, 
+               vertex.label.cex = 0.8,
+               vertex.label = igraph::V(g)$label,
+               vertex.color = igraph::V(g)$color,
+               vertex.frame.color = igraph::V(g)$color,
+               # vertex size = logFC*4
+               vertex.size = regulation_effect*4, 
+               vertex.label.color = "black",
+               edge.color = igraph::E(g)$color))
+    dev.off()
+    print(plot(g, vertex.label.dist = 0, 
+               layout = layout, 
+               # vertex.label.degree = pi/2, 
+               vertex.label.cex = 0.8,
+               vertex.label = igraph::V(g)$label,
+               vertex.color = igraph::V(g)$color,
+               vertex.frame.color = igraph::V(g)$color,
+               # vertex size = logFC*4
+               vertex.size = regulation_effect*4,
+               vertex.label.color = "black",
+               edge.color = igraph::E(g)$color))
+  })
+}
 
 
 
