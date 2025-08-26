@@ -299,60 +299,65 @@ processLimmaResult = function(limma_rslt, PTMsubstrates4PTMSEAanalysis,
 #' @import igraph
 #' @import dplyr
 KinaseNetwork4substrates_uniprot = function(pair, PTMsubstrates4PTMSEAanalysis, limma_output, PTMSEA_output, 
-                                significance_cutoff4PTMSEA=1, 
+                                significance_cutoff4PTMSEA=1, species="mouse",
                                 significance_statistic4PTMSEA="fdr.pvalue", mapping_ID,
                                 significance_cutoff4limma=0.05, logFCcutoff4limma=0.5, PTMSEA_OUTDIR,
                                 mapping_regulation, output_file_suffix="", PTMsigDB_collection_file) {
   limma_output$Feature = paste0(limma_output$Feature, "-p")
   limma_output = limma_output %>%
       filter(Feature %in% PTMsubstrates4PTMSEAanalysis)
-  limma_output$uniprotID = limma_output$Phosphosite %>% sub(":.*", "", .)
-  limma_output$PhosLocation = limma_output$Phosphosite %>% sub(".*:", "", .)
-  limma_output = limma_output%>% dplyr::select(uniprotID, PhosLocation, PTM.FlankingRegion2, everything()) 
+  limma_output$uniprotID = limma_output$Feature %>% gsub(";.*", "", .)
+  limma_output$PhosLocation = limma_output$Feature %>% gsub(".*;", "", .)
+  limma_output = limma_output%>% dplyr::select(uniprotID, PhosLocation, Feature, everything()) 
   # get significant PTMsigDB terms
-  sigIDs = PTMSEA_output[PTMSEA_output[,significance_statistic,drop=T]<significance_cutoff, ] %>% 
+  sigIDs = PTMSEA_output[PTMSEA_output[,significance_statistic,drop=T]<significance_cutoff,] %>% 
     pull(id) %>% .[!is.na(.)] 
 
   # import PTMsigDB.v2 collection
+  if (species=="moust") {
+  	PTMsigDB_collection_file = system.file("extdata", "ptm.sig.db.all.uniprot.mouse.v2.0.0.gmt", 
+        package="KinaseDownstream")
+  } else if (species=="human") {
+  	PTMsigDB_collection_file = system.file("extdata", "ptm.sig.db.all.uniprot.human.v2.0.0.gmt", 
+        package="KinaseDownstream")
+  	} else if (species=="rat") {
+  	PTMsigDB_collection_file = system.file("extdata", "ptm.sig.db.all.uniprot.rat.v2.0.0.gmt", 
+        package="KinaseDownstream")
+  }
   ptmsigdb = GSEABase::getGmt(PTMsigDB_collection_file)
   ptmsigdb0 = lapply(ptmsigdb, function(K) {
     data.frame(Term=K@setName, Phosphosite=K@geneIds)
   }) %>% Reduce(rbind, .)
   ptmsigdb2 = as.data.frame(stringr::str_split_fixed(ptmsigdb0$Phosphosite,";",2)) %>%
-    setNames(c("Phosphosite", "Regulation"))
+    setNames(c("Uniprot", "PhosLocation", "Regulation")) #####
   ptmsigdb3 = data.frame(Term=ptmsigdb0$Term,
-                               Phosphosite=ptmsigdb2$Phosphosite,
+                               Phosphosite=paste0(ptmsigdb2$Uniprot,";",ptmsigdb2$PhosLocation),
                                Regulation=ptmsigdb2$Regulation)  
   lapply(sigIDs, function(ID) {
     # print(ID)
     substrates = ptmsigdb3 %>% filter(Term==ID) %>% pull(Phosphosite)
-    shared = intersect(substrates, limma_output$PTM.FlankingRegion2) # flanking regions
-    regulation = ptmsigdb3 %>% filter(Term==ID) %>% 
-      filter(Phosphosite%in%shared) %>% pull(Regulation)
-    edge = data.frame(From=rep(ID, length(shared)), To=shared)    
+    shared = intersect(substrates, limma_output$Feature) # flanking regions
+    mapping_regulation_db = ptmsigdb3 %>% filter(Term==ID) %>% 
+      filter(Phosphosite%in%shared) %>% setNames(Regulation, Phosphosite) ###############
+    regulation = mapping_regulation_db[shared]
+    edge = data.frame(From=rep(ID,length(shared)), To=shared) 
     # library(igraph)
     g = igraph::graph_from_data_frame(d = edge, directed = FALSE)
-    igraph::V(g)$label = c(igraph::V(g)[[1]]$name,   #sub(".*_", "", V(g)[[1]]$name), 
-                   mapping_ID[igraph::V(g)[2:length(igraph::V(g))]$name] %>% as.character())   
-    mapping_regulation = mapping_regulation[shared] 
-
-    mapping_all = edge%>%mutate(FlankingRegion=To) %>% 
-      left_join(data.frame(FlankingRegion=names(mapping_ID),Name=as.character(mapping_ID))) %>% 
-      left_join(data.frame(
-        FlankingRegion=names(mapping_regulation), 
-        effect = stringr::str_split_fixed(mapping_regulation,";",2)%>%
-            as.data.frame()%>%pull(V1) %>% as.numeric(), 
-        significance = stringr::str_split_fixed(mapping_regulation,";",2)%>%
-            as.data.frame()%>%pull(V2) %>% as.numeric())) %>%
-        tibble::column_to_rownames(var="Name")
+    mapping_all = edge%>%mutate(Feature=To) %>% left_join(limma_output) %>%
+    	mutate(effect=logFC, significance=adj.P.Val) %>% 
+    	tibble::column_to_rownames(var="Feature")
+   	mapping_regulation = mapping_all[shared, "effect", drop=T] #############
     regulation_effect = abs(round(c(6,mapping_all[igraph::V(g)$label[-1],"effect"])))
     regulation_significance = (mapping_all[igraph::V(g)$label[-1],"significance"]<significance_cutoff4limma)&
                               (abs(mapping_all[igraph::V(g)$label[-1],"effect"])>logFCcutoff4limma)
     igraph::V(g)$label[-1][regulation_significance] = paste0(igraph::V(g)$label[-1][regulation_significance], "*")
-
     igraph::E(g)$color = ifelse(regulation=="u", scales::alpha("orange",0.25), scales::alpha("darkturquoise",0.25))
     igraph::V(g)$color = c(scales::alpha("black", 0.25), ifelse(mapping_regulation<0, 
                                                 scales::alpha("darkturquoise",0.5), scales::alpha("orange",0.5)))
+
+    igraph::V(g)$label = c(igraph::V(g)[[1]]$name,    
+        gsub("-p","",igraph::V(g)[2:length(igraph::V(g))]$name)%>%gsub(";","\n",.))
+
     layout = igraph::layout_with_fr(g)
     # layout = layout_in_circle(g)
     dir.create(paste0(PTMSEA_OUTDIR, "/Network/kinase_substrates/", pair,"/"), 
