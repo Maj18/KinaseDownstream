@@ -99,6 +99,9 @@ getPTMsubstrates4PTMSEAanalysis = function(limma_rslt) {
     rslt
   }) %>% Reduce(full_join, .) %>%
     .[!duplicated(.$PTM.FlankingRegion), ] 
+  if (!grepl("-p$", limma_rslt_4gct$Phosphosite[1])) {
+  	limma_rslt_4gct$Phosphosite = paste0(limma_rslt_4gct$Phosphosite, "-p")
+  }
   limma_rslt_4gct$Phosphosite
 }
 
@@ -108,6 +111,9 @@ getPTMsubstrates4PTMSEAanalysis_uniprot = function(limma_rslt) {
     rslt
   }) %>% Reduce(full_join, .) %>%
     .[!duplicated(.$Feature), ] 
+  if (!grepl("-p$", limma_rslt_4gct$Feature[1])) {
+  	limma_rslt_4gct$Feature = paste0(limma_rslt_4gct$Feature, "-p")
+  }
   limma_rslt_4gct$Feature
 }
 
