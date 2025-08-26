@@ -1,8 +1,8 @@
 Package: KinaseDownstream
 Type: Package
 Title: Kinase downstream visualization
-Version: 1.0
-Date: 2025-06-02
+Version: 2.0.0
+Date: 2025-08-26
 Author: Yuan Li
 Maintainer: Yuan Li <yuan.li@nbis.se>
 Description: This package provides functions to visualize the significantly enriched kinases in the phosphoproteomics data, the networks between each kinase, the downstream targets and their immediate String_db interacting neighbors that are observed from the matching proteomics data, facilitating the understanding of kinase interactions and their biological implications.
