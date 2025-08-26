@@ -302,7 +302,7 @@ KinaseNetwork4substrates_uniprot = function(pair, PTMsubstrates4PTMSEAanalysis, 
                                 significance_cutoff4PTMSEA=1, species="mouse",
                                 significance_statistic4PTMSEA="fdr.pvalue", mapping_ID,
                                 significance_cutoff4limma=0.05, logFCcutoff4limma=0.5, PTMSEA_OUTDIR,
-                                mapping_regulation, output_file_suffix="", PTMsigDB_collection_file) {
+                                mapping_regulation, output_file_suffix="") {
   limma_output$Feature = paste0(limma_output$Feature, "-p")
   limma_output = limma_output %>%
       filter(Feature %in% PTMsubstrates4PTMSEAanalysis)
