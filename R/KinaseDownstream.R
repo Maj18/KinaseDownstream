@@ -314,7 +314,7 @@ KinaseNetwork4substrates4uniprot = function(pair, PTMsubstrates4PTMSEAanalysis, 
     pull(id) %>% .[!is.na(.)] 
 
   # import PTMsigDB.v2 collection
-  if (species=="moust") {
+  if (species=="mouse") {
   	PTMsigDB_collection_file = system.file("extdata", "ptm.sig.db.all.uniprot.mouse.v2.0.0.gmt", 
         package="KinaseDownstream")
   } else if (species=="human") {
