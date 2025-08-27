@@ -3,4 +3,4 @@ export("KinaseNetwork4substrates", "ppiNetwork4substrates_STRING",
        "prepInput4PhosNetVis", "getPTMsubstrates4PTMSEAanalysis",
        "ppiNetwork4substrates_OmniPath", 
        "getPTMsubstrates4PTMSEAanalysis_uniprot",
-       "KinaseNetwork4substrates_uniprot")
+       "KinaseNetwork4substrates4uniprot")
