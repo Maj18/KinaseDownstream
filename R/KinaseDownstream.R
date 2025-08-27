@@ -189,9 +189,9 @@ processPTMSEAresult = function(PTMSEA_FILE_PATH, output.score.type = "NES", sig.
   fdrs = grep("fdr.pvalue", colnames(gct_data), value=T)
   for (fdr in fdrs) {
 	  N = gsub("fdr.pvalue.", "", fdr)
-	  kinaseList = gct_data[,c("id",fdr)] %>% na.omit() %>%
-      filter(gct_data[,fdr,drop=T]<sig.thresh) %>% pull(id) %>% 
-		  grep("KINASE", ., value=T) %>% gsub("KINASE-PSP_", "", .) %>% 
+	  kinaseList = gct_data[,c("id",fdr)] %>% 
+      filter(gct_data[,fdr,drop=T]<sig.thresh) %>% na.omit() %>%  
+		  pull(id) %>% grep("KINASE", ., value=T) %>% gsub("KINASE-PSP_", "", .) %>% 
 		  gsub("KINASE-iKiP_", "", .) %>% stringr::str_split(., "/|[.]") %>% 
 		  unlist() %>% gsub("-.*", "", .) %>% paste0(., collapse=",")
     dir.create(PTMSEA_OUTDIR, showWarnings = FALSE, recursive = TRUE)
