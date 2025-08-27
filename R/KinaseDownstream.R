@@ -302,7 +302,7 @@ KinaseNetwork4substrates4uniprot = function(pair, PTMsubstrates4PTMSEAanalysis, 
                                 significance_cutoff4PTMSEA=1, species="mouse",
                                 significance_statistic4PTMSEA="fdr.pvalue",
                                 significance_cutoff4limma=0.05, logFCcutoff4limma=0.5, PTMSEA_OUTDIR,
-                                mapping_regulation, output_file_suffix="") {
+                                output_file_suffix="") {
   limma_output$Feature = paste0(limma_output$Feature, "-p")
   limma_output = limma_output %>%
       filter(Feature %in% PTMsubstrates4PTMSEAanalysis)
@@ -328,7 +328,7 @@ KinaseNetwork4substrates4uniprot = function(pair, PTMsubstrates4PTMSEAanalysis, 
   ptmsigdb0 = lapply(ptmsigdb, function(K) {
     data.frame(Term=K@setName, Phosphosite=K@geneIds)
   }) %>% Reduce(rbind, .)
-  ptmsigdb2 = as.data.frame(stringr::str_split_fixed(ptmsigdb0$Phosphosite,";",2)) %>%
+  ptmsigdb2 = as.data.frame(stringr::str_split_fixed(ptmsigdb0$Phosphosite,";",3)) %>%
     setNames(c("Uniprot", "PhosLocation", "Regulation")) #####
   ptmsigdb3 = data.frame(Term=ptmsigdb0$Term,
                                Phosphosite=paste0(ptmsigdb2$Uniprot,";",ptmsigdb2$PhosLocation),
@@ -348,16 +348,18 @@ KinaseNetwork4substrates4uniprot = function(pair, PTMsubstrates4PTMSEAanalysis, 
     	mutate(effect=logFC, significance=adj.P.Val) %>% 
     	tibble::column_to_rownames(var="Feature")
    	mapping_regulation = mapping_all[shared, "effect", drop=T] #############
-    regulation_effect = abs(round(c(6,mapping_all[igraph::V(g)$label[-1],"effect"])))
-    regulation_significance = (mapping_all[igraph::V(g)$label[-1],"significance"]<significance_cutoff4limma)&
-                              (abs(mapping_all[igraph::V(g)$label[-1],"effect"])>logFCcutoff4limma)
-    igraph::V(g)$label[-1][regulation_significance] = paste0(igraph::V(g)$label[-1][regulation_significance], "*")
+    regulation_effect = abs(round(c(6,mapping_all[names(igraph::V(g))[-1],"effect"])))
+    regulation_significance = 
+      (mapping_all[names(igraph::V(g))[-1],"significance"]<significance_cutoff4limma)&
+      (abs(mapping_all[names(igraph::V(g))[-1],"effect"])>logFCcutoff4limma)
+    igraph::V(g)$label = names(igraph::V(g))
+    igraph::V(g)$label[-1][regulation_significance] = paste0(names(igraph::V(g))[-1][regulation_significance], "*")
     igraph::E(g)$color = ifelse(regulation=="u", scales::alpha("orange",0.25), scales::alpha("darkturquoise",0.25))
     igraph::V(g)$color = c(scales::alpha("black", 0.25), ifelse(mapping_regulation<0, 
                                                 scales::alpha("darkturquoise",0.5), scales::alpha("orange",0.5)))
 
-    igraph::V(g)$label = c(igraph::V(g)[[1]]$name,    
-        gsub("-p","",igraph::V(g)[2:length(igraph::V(g))]$name)%>%gsub(";","\n",.))
+    igraph::V(g)$label = c(igraph::V(g)[[1]]$label,    
+        gsub("-p","",igraph::V(g)[2:length(igraph::V(g))]$label)%>%gsub(";","\n",.))
 
     layout = igraph::layout_with_fr(g)
     # layout = layout_in_circle(g)
@@ -387,18 +389,19 @@ KinaseNetwork4substrates4uniprot = function(pair, PTMsubstrates4PTMSEAanalysis, 
                vertex.label.color = "black",
                edge.color = igraph::E(g)$color))
     dev.off()
-    print(plot(g, vertex.label.dist = 0, 
-               layout = layout, 
-               # vertex.label.degree = pi/2, 
-               vertex.label.cex = 0.8,
-               vertex.label = igraph::V(g)$label,
-               vertex.color = igraph::V(g)$color,
-               vertex.frame.color = igraph::V(g)$color,
-               # vertex size = logFC*4
-               vertex.size = regulation_effect*4,
-               vertex.label.color = "black",
-               edge.color = igraph::E(g)$color))
-  })
+  #   print(plot(g, vertex.label.dist = 0, 
+  #              layout = layout, 
+  #              # vertex.label.degree = pi/2, 
+  #              vertex.label.cex = 0.8,
+  #              vertex.label = igraph::V(g)$label,
+  #              vertex.color = igraph::V(g)$color,
+  #              vertex.frame.color = igraph::V(g)$color,
+  #              # vertex size = logFC*4
+  #              vertex.size = regulation_effect*4,
+  #              vertex.label.color = "black",
+  #              edge.color = igraph::E(g)$color))
+  # }
+  )
 }
 
 
