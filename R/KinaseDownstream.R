@@ -400,8 +400,7 @@ KinaseNetwork4substrates4uniprot = function(pair, PTMsubstrates4PTMSEAanalysis, 
   #              vertex.size = regulation_effect*4,
   #              vertex.label.color = "black",
   #              edge.color = igraph::E(g)$color))
-  # }
-  )
+  })
 }
 
 
