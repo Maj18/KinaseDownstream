@@ -338,7 +338,8 @@ KinaseNetwork4substrates_uniprot = function(pair, PTMsubstrates4PTMSEAanalysis, 
     substrates = ptmsigdb3 %>% filter(Term==ID) %>% pull(Phosphosite)
     shared = intersect(substrates, limma_output$Feature) # flanking regions
     mapping_regulation_db = ptmsigdb3 %>% filter(Term==ID) %>% 
-      filter(Phosphosite%in%shared) %>% setNames(Regulation, Phosphosite) ###############
+      filter(Phosphosite%in%shared)
+    mapping_regulation_db = setNames(mapping_regulation_db$Regulation, mapping_regulation_db$Phosphosite) 
     regulation = mapping_regulation_db[shared]
     edge = data.frame(From=rep(ID,length(shared)), To=shared) 
     # library(igraph)
