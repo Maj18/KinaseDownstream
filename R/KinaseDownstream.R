@@ -298,7 +298,7 @@ processLimmaResult = function(limma_rslt, PTMsubstrates4PTMSEAanalysis,
 #' @param output_file_suffix a suffix for the output file names, default is empty string. If you want to add FlankingRegion to the plot, set output_file_suffix = "wPhosphosites", otherwise set it to "".
 #' @import igraph
 #' @import dplyr
-KinaseNetwork4substrates_uniprot = function(pair, PTMsubstrates4PTMSEAanalysis, limma_output, PTMSEA_output, 
+KinaseNetwork4substrates4uniprot = function(pair, PTMsubstrates4PTMSEAanalysis, limma_output, PTMSEA_output, 
                                 significance_cutoff4PTMSEA=1, species="mouse",
                                 significance_statistic4PTMSEA="fdr.pvalue", mapping_ID,
                                 significance_cutoff4limma=0.05, logFCcutoff4limma=0.5, PTMSEA_OUTDIR,
