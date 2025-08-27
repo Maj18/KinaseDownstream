@@ -2,4 +2,5 @@ export("KinaseNetwork4substrates", "ppiNetwork4substrates_STRING",
        "processLimmaResult", "processPTMSEAresult", "runPTMSEA", 
        "prepInput4PhosNetVis", "getPTMsubstrates4PTMSEAanalysis",
        "ppiNetwork4substrates_OmniPath", 
-       "getPTMsubstrates4PTMSEAanalysis_uniprot")
+       "getPTMsubstrates4PTMSEAanalysis_uniprot",
+       "KinaseNetwork4substrates_uniprot")
