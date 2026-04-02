@@ -1,4 +1,4 @@
-![Version](https://img.shields.io/badge/Version-2.0.0-green)  [![DOI](https://zenodo.org/badge/994653217.svg)](https://doi.org/10.5281/zenodo.19384525)
+![Version](https://img.shields.io/badge/Version-2.0.0-green) ![DOI](https://zenodo.org/badge/994653217.svg)](https://doi.org/10.5281/zenodo.19384525)
 
 # KinaseDownstream
 
