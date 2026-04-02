@@ -1,3 +1,5 @@
+![Version](https://img.shields.io/badge/Version-2.0.0-green)  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19384526.svg)](https://doi.org/10.5281/zenodo.19384526)
+
 # KinaseDownstream
 
 This package provides functions to visualize the significantly enriched kinases in the phosphoproteomics data, the networks between each kinase, the downstream targets and their immediate String_db interacting neighbors that are observed from the matching proteomics data, facilitating the understanding of kinase interactions and their biological implications.
